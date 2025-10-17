@@ -1,0 +1,18 @@
+/* App组件样式 */
+.app-container {
+  min-height: 100vh;
+}
+
+.main-content {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #666;
+}

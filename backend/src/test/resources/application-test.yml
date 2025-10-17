@@ -1,0 +1,66 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: travel-planner
+  
+  # 数据库配置 - 测试环境
+  datasource:
+    url: jdbc:postgresql://localhost:5432/travel_planner_test
+    username: ${DB_USERNAME:test_user}
+    password: ${DB_PASSWORD:test_password}
+    driver-class-name: org.postgresql.Driver
+    
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        
+  # Jackson配置
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+
+# 日志配置
+logging:
+  level:
+    com.travelplanner: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 自定义配置
+app:
+  # JWT配置
+  jwt:
+    secret: test-secret-key
+    expiration: 3600000 # 1小时
+    
+  # 高德地图API配置
+  amap:
+    api-key: test_amap_key
+    base-url: https://restapi.amap.com/v3
+    
+  # 科大讯飞API配置
+  xunfei:
+    app-id: test_app_id
+    api-key: test_api_key
+    api-secret: test_api_secret
+    base-url: https://api.xf-yun.com/v1/private
+    
+  # 阿里通义千问API配置
+  qwen:
+    api-key: test_qwen_key
+    base-url: https://dashscope.aliyuncs.com/api/v1
+    model: qwen-turbo

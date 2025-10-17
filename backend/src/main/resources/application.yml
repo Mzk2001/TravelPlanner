@@ -1,0 +1,71 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: travel-planner
+  
+  # 数据库配置 - H2内存数据库（默认配置）
+  datasource:
+    url: jdbc:h2:mem:travel_planner
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        
+  # H2控制台配置
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+        
+  # Jackson配置
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+
+# 日志配置
+logging:
+  level:
+    com.travelplanner: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 自定义配置
+app:
+  # JWT配置
+  jwt:
+    secret: ${JWT_SECRET:travelplanner-secret-key-2024}
+    expiration: 86400000 # 24小时
+    
+  # 高德地图API配置
+  amap:
+    api-key: ${AMAP_API_KEY:your_amap_api_key}
+    base-url: https://restapi.amap.com/v3
+    
+  # 科大讯飞API配置
+  xunfei:
+    app-id: ${XUNFEI_APP_ID:your_xunfei_app_id}
+    api-key: ${XUNFEI_API_KEY:your_xunfei_api_key}
+    api-secret: ${XUNFEI_API_SECRET:your_xunfei_api_secret}
+    base-url: https://api.xf-yun.com/v1/private
+    
+  # 阿里通义千问API配置
+  qwen:
+    api-key: ${QWEN_API_KEY:your_qwen_api_key}
+    base-url: https://dashscope.aliyuncs.com/api/v1
+    model: qwen-turbo
