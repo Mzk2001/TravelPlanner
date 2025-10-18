@@ -1,91 +1,167 @@
 // 用户相关类型
-// export interface User {
-//   id: number
-//   username: string
-//   email: string
-//   role: 'USER' | 'ADMIN'
-//   createdAt: string
-//   updatedAt: string
-// }
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  phone?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  role: 'USER' | 'ADMIN';
+  isActive: boolean;
+  createdAt: string;
+}
 
-// export interface LoginRequest {
-//   username: string
-//   password: string
-// }
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
 
-// export interface RegisterRequest {
-//   username: string
-//   password: string
-//   email: string
-// }
+export interface LoginResponse {
+  token: string;
+  tokenType: string;
+  expiresIn: number;
+  user: User;
+}
+
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  email: string;
+}
+
+export interface UpdateUserRequest {
+  email?: string;
+  phone?: string;
+  fullName?: string;
+  avatarUrl?: string;
+}
 
 // 旅游计划相关类型
-// export type PlanStatus = 'DRAFT' | 'PLANNING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
+export interface TravelPlan {
+  id: number;
+  userId: number;
+  planName: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  travelType: string;
+  groupSize: number;
+  specialRequirements?: string;
+  status: 'DRAFT' | 'PLANNING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  aiGenerated?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-// export interface TravelPlan {
-//   id: number
-//   userId: number
-//   planName: string
-//   destination: string
-//   startDate: string
-//   endDate: string
-//   budget: number
-//   travelType: string
-//   groupSize: number
-//   specialRequirements?: string
-//   status: PlanStatus
-//   createdAt: string
-//   updatedAt: string
-// }
+export interface CreatePlanRequest {
+  userId: number;
+  planName: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  travelType: string;
+  groupSize: number;
+  specialRequirements?: string;
+}
 
-// export interface CreatePlanRequest {
-//   userId: number
-//   planName: string
-//   destination: string
-//   startDate: string
-//   endDate: string
-//   budget: number
-//   travelType: string
-//   groupSize: number
-//   specialRequirements?: string
-// }
+export interface UpdatePlanRequest {
+  planName?: string;
+  destination?: string;
+  startDate?: string;
+  endDate?: string;
+  budget?: number;
+  travelType?: string;
+  groupSize?: number;
+  specialRequirements?: string;
+}
 
-// export interface UpdatePlanRequest {
-//   planName?: string
-//   destination?: string
-//   startDate?: string
-//   endDate?: string
-//   budget?: number
-//   travelType?: string
-//   groupSize?: number
-//   specialRequirements?: string
-// }
+export interface UpdateStatusRequest {
+  status: string;
+}
 
-// 对话记录相关类型
-// export interface Conversation {
-//   id: number
-//   userId: number
-//   planId?: number
-//   message: string
-//   response: string
-//   createdAt: string
-// }
+// 对话相关类型
+export interface Conversation {
+  id: number;
+  userId: number;
+  planId?: number;
+  userMessage: string;
+  aiResponse: string;
+  messageType: 'text' | 'voice';
+  voiceFileUrl?: string;
+  processingTime: number;
+  createdAt: string;
+}
+
+export interface ChatRequest {
+  userId: number;
+  planId?: number;
+  message: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  processingTime: number;
+  timestamp: string;
+}
+
+export interface VoiceChatResponse {
+  userMessage: string;
+  aiResponse: string;
+  voiceFileUrl?: string;
+  processingTime: number;
+  timestamp: string;
+}
 
 // API响应类型
-// export interface ApiResponse<T> {
-//   success: boolean
-//   data: T
-//   message?: string
-// }
+export interface ApiResponse<T = any> {
+  code: number;
+  message: string;
+  data: T;
+  timestamp: string;
+}
 
-// export interface PaginatedResponse<T> {
-//   content: T[]
-//   totalElements: number
-//   totalPages: number
-//   size: number
-//   number: number
-// }
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+    };
+  };
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  first: boolean;
+  numberOfElements: number;
+}
 
-// 暂时注释掉所有TypeScript类型定义，避免构建错误
+// 地图相关类型
+export interface PlaceSearchResult {
+  id: string;
+  name: string;
+  address: string;
+  location: {
+    lng: number;
+    lat: number;
+  };
+  distance?: number;
+}
 
-
+export interface PlaceDetail {
+  id: string;
+  name: string;
+  address: string;
+  location: {
+    lng: number;
+    lat: number;
+  };
+  phone?: string;
+  website?: string;
+  rating?: number;
+  photos?: string[];
+  description?: string;
+}

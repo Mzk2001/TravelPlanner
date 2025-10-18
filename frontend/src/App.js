@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout, message } from 'antd';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -70,22 +70,18 @@ function App() {
           <Layout>
             {isAuthenticated && <Header />}
             <Content className="main-content">
-              <Switch>
+              <Routes>
                 <Route 
                   path="/login" 
-                  render={() =>
-                    isAuthenticated ? <Redirect to="/dashboard" /> : <LoginPage />
-                  } 
+                  element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
                 />
                 <Route 
                   path="/register" 
-                  render={() =>
-                    isAuthenticated ? <Redirect to="/dashboard" /> : <RegisterPage />
-                  } 
+                  element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
                 />
                 <Route 
                   path="/dashboard" 
-                  render={() =>
+                  element={
                     <ProtectedRoute>
                       <DashboardPage />
                     </ProtectedRoute>
@@ -93,7 +89,7 @@ function App() {
                 />
                 <Route 
                   path="/plan/:id" 
-                  render={() =>
+                  element={
                     <ProtectedRoute>
                       <PlanDetailPage />
                     </ProtectedRoute>
@@ -101,7 +97,7 @@ function App() {
                 />
                 <Route 
                   path="/chat/:planId?" 
-                  render={() =>
+                  element={
                     <ProtectedRoute>
                       <ChatPage />
                     </ProtectedRoute>
@@ -109,18 +105,17 @@ function App() {
                 />
                 <Route 
                   path="/profile" 
-                  render={() =>
+                  element={
                     <ProtectedRoute>
                       <ProfilePage />
                     </ProtectedRoute>
                   } 
                 />
                 <Route 
-                  exact
                   path="/" 
-                  render={() => <Redirect to={isAuthenticated ? "/dashboard" : "/login"} />} 
+                  element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
                 />
-              </Switch>
+              </Routes>
             </Content>
           </Layout>
         </div>

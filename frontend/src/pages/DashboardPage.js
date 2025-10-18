@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, List, Button, Tag, Empty, Spin, message } from 'antd';
 import { PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { planAPI } from '../services/api';
 import dayjs from 'dayjs';
@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 const DashboardPage = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const history = useHistory();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -38,15 +38,15 @@ const DashboardPage = () => {
   };
 
   const handleCreatePlan = () => {
-    history.push('/chat');
+    navigate('/chat');
   };
 
   const handleViewPlan = (planId) => {
-    history.push(`/plan/${planId}`);
+    navigate(`/plan/${planId}`);
   };
 
   const handleEditPlan = (planId) => {
-    history.push(`/chat/${planId}`);
+    navigate(`/chat/${planId}`);
   };
 
   const handleDeletePlan = async (planId) => {

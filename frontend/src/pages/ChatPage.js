@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Input, Button, List, Avatar, Spin, message, Form } from 'antd';
 import { SendOutlined, AudioOutlined, UserOutlined, RobotOutlined } from '@ant-design/icons';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { conversationAPI, planAPI } from '../services/api';
 import dayjs from 'dayjs';
@@ -16,7 +16,7 @@ const ChatPage = () => {
   const messagesEndRef = useRef(null);
   
   const { planId } = useParams();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {

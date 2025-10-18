@@ -7,13 +7,13 @@ import {
   LogoutOutlined,
   PlusOutlined 
 } from '@ant-design/icons';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const { Header: AntHeader } = Layout;
 
 const Header = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const { user, handleLogout } = useAuth();
 
@@ -44,19 +44,19 @@ const Header = () => {
   ];
 
   const handleMenuClick = ({ key }) => {
-    history.push(key);
+    navigate(key);
   };
 
   const handleUserMenuClick = ({ key }) => {
     if (key === 'profile') {
-      history.push('/profile');
+      navigate('/profile');
     } else if (key === 'logout') {
       handleLogout();
     }
   };
 
   const handleCreatePlan = () => {
-    history.push('/chat');
+    navigate('/chat');
   };
 
   return (

@@ -1,33 +1,34 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { Form, Input, Button, Card, Typography, message, Space } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
-import { userAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { RegisterRequest } from '../types';
 
 const { Title, Text } = Typography;
 
-const RegisterPage = () => {
+const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
   const navigate = useNavigate();
 
-  const onFinish = async (values) => {
+  const onFinish = async (values: RegisterRequest & { confirmPassword: string }) => {
     if (values.password !== values.confirmPassword) {
-      message.error('两次输入的密码不一致');
+      message.error('两次输入的密码不一致！');
       return;
     }
 
     setLoading(true);
     try {
-      await userAPI.register({
+      await register({
         username: values.username,
         password: values.password,
-        email: values.email
+        email: values.email,
       });
-      
-      message.success('注册成功！请登录');
-      navigate('/login');
-    } catch (error) {
-      message.error(error.response?.data?.error || '注册失败');
+      message.success('注册成功！');
+      navigate('/');
+    } catch (error: any) {
+      message.error(error.response?.data?.error || '注册失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -45,16 +46,15 @@ const RegisterPage = () => {
       <Card 
         style={{ 
           width: '100%', 
-          maxWidth: '400px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          borderRadius: '12px'
+          maxWidth: 400,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Title level={2} style={{ color: '#1890ff', marginBottom: '8px' }}>
-            注册账号
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <Title level={2} style={{ color: '#1890ff', marginBottom: 8 }}>
+            🗺️ 旅游助手
           </Title>
-          <Text type="secondary">加入旅游助手，开启智能旅行</Text>
+          <Text type="secondary">创建账号，开启智能旅游规划之旅</Text>
         </div>
 
         <Form
@@ -71,9 +71,9 @@ const RegisterPage = () => {
               { max: 20, message: '用户名最多20个字符!' }
             ]}
           >
-            <Input 
-              prefix={<UserOutlined />} 
-              placeholder="用户名" 
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="用户名"
             />
           </Form.Item>
 
@@ -84,9 +84,9 @@ const RegisterPage = () => {
               { type: 'email', message: '请输入有效的邮箱地址!' }
             ]}
           >
-            <Input 
-              prefix={<MailOutlined />} 
-              placeholder="邮箱地址" 
+            <Input
+              prefix={<MailOutlined />}
+              placeholder="邮箱"
             />
           </Form.Item>
 
@@ -116,24 +116,28 @@ const RegisterPage = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+            <Button
+              type="primary"
+              htmlType="submit"
               loading={loading}
-              style={{ width: '100%', height: '40px' }}
+              style={{ width: '100%', height: 40 }}
             >
               注册
             </Button>
           </Form.Item>
         </Form>
 
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Text type="secondary">
-            已有账号？{' '}
-            <Link to="/login" style={{ color: '#1890ff' }}>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <Space>
+            <Text type="secondary">已有账号？</Text>
+            <Button 
+              type="link" 
+              onClick={() => navigate('/login')}
+              style={{ padding: 0 }}
+            >
               立即登录
-            </Link>
-          </Text>
+            </Button>
+          </Space>
         </div>
       </Card>
     </div>
@@ -141,5 +145,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-
-
