@@ -17,13 +17,17 @@ import java.util.Optional;
  * @version 1.0.0
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class UserService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
     
     /**
      * 用户注册

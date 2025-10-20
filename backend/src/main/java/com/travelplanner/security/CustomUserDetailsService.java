@@ -18,11 +18,14 @@ import java.util.ArrayList;
  * @version 1.0.0
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CustomUserDetailsService implements UserDetailsService {
     
     private final UserService userService;
+    
+    public CustomUserDetailsService(UserService userService) {
+        this.userService = userService;
+    }
     
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

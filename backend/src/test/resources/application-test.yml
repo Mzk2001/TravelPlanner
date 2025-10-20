@@ -6,13 +6,15 @@ server:
 spring:
   application:
     name: travel-planner
+  main:
+    allow-circular-references: true
   
-  # 数据库配置 - 测试环境
+  # 数据库配置 - H2 内存数据库（测试）
   datasource:
-    url: jdbc:postgresql://localhost:5432/travel_planner_test
-    username: ${DB_USERNAME:test_user}
-    password: ${DB_PASSWORD:test_password}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:travel_planner_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
     
   # JPA配置
   jpa:
@@ -21,8 +23,11 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+  h2:
+    console:
+      enabled: true
         
   # Jackson配置
   jackson:
@@ -44,7 +49,7 @@ logging:
 app:
   # JWT配置
   jwt:
-    secret: test-secret-key
+    secret: 1c3f5a7b9d2e4f6081a3b5c7d9e0f1a21c3f5a7b9d2e4f6081a3b5c7d9e0f1a2
     expiration: 3600000 # 1小时
     
   # 高德地图API配置
