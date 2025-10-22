@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import PlanDetailPage from './pages/PlanDetailPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import Header from './components/Header';
 import './App.css';
 
@@ -108,6 +109,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ProfilePage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
                     </ProtectedRoute>
                   } 
                 />

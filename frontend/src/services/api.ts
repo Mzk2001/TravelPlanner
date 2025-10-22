@@ -16,7 +16,13 @@ import {
   ApiResponse,
   PageResponse,
   PlaceSearchResult,
-  PlaceDetail
+  PlaceDetail,
+  Expense,
+  CreateExpenseRequest,
+  UpdateExpenseRequest,
+  ExpenseStats,
+  BudgetAnalysis,
+  BudgetOptimization
 } from '../types';
 
 class ApiService {
@@ -27,10 +33,14 @@ class ApiService {
     this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
     this.api = axios.create({
       baseURL: this.baseURL,
-      timeout: 30000,
+      timeout: 120000, // 增加到2分钟，给AI生成更多时间
       headers: {
         'Content-Type': 'application/json',
       },
+      transformRequest: [(data) => {
+        console.log('发送的数据:', data);
+        return JSON.stringify(data);
+      }],
     });
 
     // 请求拦截器 - 添加认证token
@@ -133,7 +143,20 @@ class ApiService {
 
   // 对话相关API
   async sendMessage(chatData: ChatRequest): Promise<ChatResponse> {
-    const response = await this.api.post('/conversations/chat', chatData);
+    // 为聊天API单独设置更长的超时时间
+    const response = await this.api.post('/conversations/chat', chatData, {
+      timeout: 120000 // 2分钟超时，给AI生成足够时间
+    });
+    return response.data;
+  }
+
+  // AI生成旅游计划
+  async generateTravelPlan(apiKey: string, userMessage: string, planContext?: string): Promise<{ success: boolean; result: string }> {
+    const response = await this.api.post('/ai/generate', {
+      apiKey,
+      userMessage,
+      planContext: planContext || ''
+    });
     return response.data;
   }
 
@@ -184,6 +207,104 @@ class ApiService {
   async getPlaceDetail(placeId: string): Promise<PlaceDetail> {
     const response = await this.api.get(`/conversations/places/${placeId}`);
     return response.data;
+  }
+
+  // 费用管理相关API
+  async createExpense(expenseData: CreateExpenseRequest): Promise<Expense> {
+    const response = await this.api.post('/expenses', expenseData);
+    return response.data.data;
+  }
+
+  async getExpense(expenseId: number): Promise<Expense> {
+    const response = await this.api.get(`/expenses/${expenseId}`);
+    return response.data.data;
+  }
+
+  async updateExpense(expenseId: number, expenseData: UpdateExpenseRequest): Promise<Expense> {
+    const response = await this.api.put(`/expenses/${expenseId}`, expenseData);
+    return response.data.data;
+  }
+
+  async deleteExpense(expenseId: number): Promise<{ message: string }> {
+    const response = await this.api.delete(`/expenses/${expenseId}`);
+    return response.data;
+  }
+
+  async getExpensesByPlan(
+    planId: number,
+    page: number = 0,
+    size: number = 10,
+    category?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{ expenses: Expense[]; pagination: any }> {
+    const params: any = { page, size };
+    if (category) params.category = category;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
+    const response = await this.api.get(`/expenses/plans/${planId}`, { params });
+    return response.data.data;
+  }
+
+  async getExpensesByUser(
+    userId: number,
+    page: number = 0,
+    size: number = 10
+  ): Promise<{ expenses: Expense[]; pagination: any }> {
+    const response = await this.api.get(`/expenses/users/${userId}`, {
+      params: { page, size }
+    });
+    return response.data.data;
+  }
+
+  async getTotalAmountByPlan(planId: number): Promise<{ planId: number; totalAmount: number }> {
+    const response = await this.api.get(`/expenses/plans/${planId}/total`);
+    return response.data.data;
+  }
+
+  async getCategoryStatsByPlan(planId: number): Promise<{ planId: number; categoryStats: Record<string, number> }> {
+    const response = await this.api.get(`/expenses/plans/${planId}/category-stats`);
+    return response.data.data;
+  }
+
+  async getDateStatsByPlan(planId: number): Promise<{ planId: number; dateStats: Record<string, number> }> {
+    const response = await this.api.get(`/expenses/plans/${planId}/date-stats`);
+    return response.data.data;
+  }
+
+  async getBudgetAnalysis(planId: number): Promise<BudgetAnalysis> {
+    const response = await this.api.get(`/expenses/plans/${planId}/budget-analysis`);
+    return response.data.data;
+  }
+
+  async getBudgetOptimization(planId: number, targetSavings: number): Promise<BudgetOptimization> {
+    const response = await this.api.post(`/expenses/plans/${planId}/budget-optimization?targetSavings=${targetSavings}`);
+    return response.data.data;
+  }
+
+  // AI服务测试API
+  async testAiService(apiKey: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      console.log('发送AI测试请求:', { apiKey });
+      const response = await fetch(`${this.baseURL}/ai/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ apiKey })
+      });
+      
+      const data = await response.json();
+      console.log('AI测试响应:', data);
+      return data;
+    } catch (error: any) {
+      console.error('AI测试错误:', error);
+      return {
+        success: false,
+        message: error.message || '测试失败'
+      };
+    }
   }
 
   // 工具方法

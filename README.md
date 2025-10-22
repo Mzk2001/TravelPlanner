@@ -34,9 +34,9 @@ TravelPlanner/
 ## 🚀 技术栈
 
 ### 后端技术
-- **框架**: Spring Boot 3.2.0
-- **语言**: Java 17
-- **数据库**: PostgreSQL 15
+- **框架**: Spring Boot 2.7.18
+- **语言**: Java 8
+- **数据库**: SQLite (内嵌数据库)
 - **ORM**: Spring Data JPA
 - **安全**: Spring Security + JWT
 - **构建**: Maven
@@ -51,8 +51,8 @@ TravelPlanner/
 
 ### 基础设施
 - **容器化**: Docker + Docker Compose
-- **反向代理**: Nginx
-- **数据库**: PostgreSQL
+- **数据库**: SQLite (无需外部数据库)
+- **部署**: 单容器部署，数据持久化
 
 ## 🎯 核心功能
 
@@ -85,11 +85,8 @@ TravelPlanner/
 ## 🛠️ 快速开始
 
 ### 环境要求
-- Java 17+
-- Maven 3.6+
-- Node.js 18+
 - Docker & Docker Compose
-- PostgreSQL 15+
+- 无需安装Java、Maven、Node.js或数据库
 
 ### 1. 克隆项目
 ```bash
@@ -97,28 +94,53 @@ git clone <repository-url>
 cd TravelPlanner
 ```
 
-### 2. 配置环境变量
+### 2. 一键部署（推荐）
 ```bash
-# 复制环境变量模板
-cp env.example .env
+# Windows用户
+build-docker.bat
 
-# 编辑 .env 文件，填入真实的API密钥
-vim .env
+# Linux/Mac用户
+chmod +x build-docker.sh
+./build-docker.sh
+
+# 启动应用
+docker-compose up -d
 ```
 
-### 3. 启动服务
+### 3. 手动构建部署
 ```bash
-# 使用Docker Compose启动所有服务
+# 进入后端目录
+cd backend
+
+# 编译和打包
+mvn clean package -DskipTests
+
+# 复制依赖
+mvn dependency:copy-dependencies -DoutputDirectory=target/dependency
+
+# 返回根目录
+cd ..
+
+# 构建Docker镜像
+docker build -t travel-planner:latest ./backend
+
+# 启动应用
 docker-compose up -d
+```
+
+### 4. 访问应用
+- **后端API**: http://localhost:8080/api
+- **健康检查**: http://localhost:8080/api/health
+- **测试用户**: username: `test`, password: `password`
+
+### 5. 查看日志
+```bash
+# 查看应用日志
+docker-compose logs -f travel-planner
 
 # 查看服务状态
 docker-compose ps
 ```
-
-### 4. 访问应用
-- **前端应用**: http://localhost:3000
-- **后端API**: http://localhost:8080/api
-- **API文档**: http://localhost:8080/swagger-ui.html
 
 ## 📖 开发指南
 
@@ -126,13 +148,10 @@ docker-compose ps
 
 #### 后端开发
 ```bash
-# 启动数据库
-docker-compose up -d postgres
-
 # 进入后端目录
 cd backend
 
-# 编译运行
+# 编译运行（使用SQLite数据库）
 mvn clean compile
 mvn spring-boot:run
 ```
@@ -148,6 +167,11 @@ npm install
 # 启动开发服务器
 npm run dev
 ```
+
+### 数据库说明
+- **SQLite数据库**: 数据文件存储在 `backend/data/travel_planner.db`
+- **数据持久化**: 通过Docker volume挂载实现数据持久化
+- **无需外部数据库**: 应用内置SQLite，无需安装PostgreSQL等数据库
 
 ### API测试
 ```bash
@@ -180,10 +204,6 @@ curl -X POST http://localhost:8080/api/plans \
 
 ### 环境变量配置
 ```bash
-# 数据库配置
-DB_USERNAME=travelplanner
-DB_PASSWORD=password
-
 # JWT密钥
 JWT_SECRET=travelplanner-secret-key-2024
 
@@ -198,6 +218,12 @@ XUNFEI_API_SECRET=your_xunfei_api_secret
 # 阿里通义千问API
 QWEN_API_KEY=your_qwen_api_key
 ```
+
+### SQLite数据库优势
+- **零配置**: 无需安装和配置数据库服务器
+- **便携性**: 数据库文件可随应用一起分发
+- **轻量级**: 适合小型应用和演示
+- **Docker友好**: 单容器部署，简化部署流程
 
 ## 📊 数据库设计
 
@@ -223,23 +249,34 @@ npm test
 
 ## 📦 部署
 
-### Docker部署
+### Docker部署（推荐）
 ```bash
-# 构建镜像
-docker-compose build
+# 一键构建和启动
+build-docker.bat  # Windows
+# 或
+./build-docker.sh  # Linux/Mac
 
 # 启动服务
 docker-compose up -d
 
 # 查看日志
-docker-compose logs -f
+docker-compose logs -f travel-planner
 ```
 
 ### 生产环境配置
 1. 修改 `docker-compose.yml` 中的环境变量
-2. 配置SSL证书
+2. 配置SSL证书（如需要）
 3. 设置域名和DNS
 4. 配置监控和日志
+
+### 数据备份
+```bash
+# 备份SQLite数据库
+cp backend/data/travel_planner.db backup/travel_planner_$(date +%Y%m%d).db
+
+# 恢复数据库
+cp backup/travel_planner_20240101.db backend/data/travel_planner.db
+```
 
 ## 🤝 贡献指南
 

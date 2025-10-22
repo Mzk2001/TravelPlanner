@@ -45,7 +45,9 @@ public class ConversationController {
     @PostMapping("/chat")
     public ResponseEntity<?> chat(@Valid @RequestBody ChatRequest request) {
         try {
-            log.info("收到聊天请求: userId={}, planId={}", request.getUserId(), request.getPlanId());
+            log.info("收到聊天请求: userId={}, planId={}, apiKey={}", 
+                request.getUserId(), request.getPlanId(), 
+                request.getApiKey() != null ? "已提供" : "未提供");
             
             long startTime = System.currentTimeMillis();
             
@@ -60,7 +62,18 @@ public class ConversationController {
             }
             
             // 调用AI服务生成回复
-            String aiResponse = aiService.generateTravelPlan(request.getMessage(), planContext);
+            String aiResponse;
+            if (request.getApiKey() != null && !request.getApiKey().trim().isEmpty()) {
+                // 使用自定义API Key
+                aiResponse = aiService.generateTravelPlanWithCustomKey(
+                    request.getApiKey(), 
+                    request.getMessage(), 
+                    planContext
+                );
+            } else {
+                // 使用默认API Key
+                aiResponse = aiService.generateTravelPlan(request.getMessage(), planContext);
+            }
             
             long processingTime = System.currentTimeMillis() - startTime;
             
@@ -79,7 +92,7 @@ public class ConversationController {
             ChatResponse response = new ChatResponse();
             response.setMessage(aiResponse);
             response.setProcessingTime(processingTime);
-            response.setTimestamp(LocalDateTime.now());
+            response.setTimestamp(LocalDateTime.now().toString());
             
             return ResponseEntity.ok(response);
             
@@ -151,7 +164,7 @@ public class ConversationController {
             response.setAiResponse(aiResponse);
             response.setVoiceFileUrl(voiceFileUrl);
             response.setProcessingTime(processingTime);
-            response.setTimestamp(LocalDateTime.now());
+            response.setTimestamp(LocalDateTime.now().toString());
             
             return ResponseEntity.ok(response);
             
@@ -261,6 +274,7 @@ public class ConversationController {
         private Long userId;
         private Long planId;
         private String message;
+        private String apiKey;
         
         // Getters and Setters
         public Long getUserId() { return userId; }
@@ -269,20 +283,22 @@ public class ConversationController {
         public void setPlanId(Long planId) { this.planId = planId; }
         public String getMessage() { return message; }
         public void setMessage(String message) { this.message = message; }
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
     }
     
     public static class ChatResponse {
         private String message;
         private Long processingTime;
-        private LocalDateTime timestamp;
+        private String timestamp;
         
         // Getters and Setters
         public String getMessage() { return message; }
         public void setMessage(String message) { this.message = message; }
         public Long getProcessingTime() { return processingTime; }
         public void setProcessingTime(Long processingTime) { this.processingTime = processingTime; }
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
     }
     
     public static class VoiceChatResponse {
@@ -290,7 +306,7 @@ public class ConversationController {
         private String aiResponse;
         private String voiceFileUrl;
         private Long processingTime;
-        private LocalDateTime timestamp;
+        private String timestamp;
         
         // Getters and Setters
         public String getUserMessage() { return userMessage; }
@@ -301,8 +317,8 @@ public class ConversationController {
         public void setVoiceFileUrl(String voiceFileUrl) { this.voiceFileUrl = voiceFileUrl; }
         public Long getProcessingTime() { return processingTime; }
         public void setProcessingTime(Long processingTime) { this.processingTime = processingTime; }
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
     }
     
     public static class ConversationResponse {

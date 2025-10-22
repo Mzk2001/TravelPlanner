@@ -98,6 +98,7 @@ export interface ChatRequest {
   userId: number;
   planId?: number;
   message: string;
+  apiKey?: string;
 }
 
 export interface ChatResponse {
@@ -164,4 +165,82 @@ export interface PlaceDetail {
   rating?: number;
   photos?: string[];
   description?: string;
+}
+
+// 费用管理相关类型
+export interface Expense {
+  id: number;
+  planId: number;
+  userId: number;
+  category: 'TRANSPORTATION' | 'ACCOMMODATION' | 'MEAL' | 'ACTIVITY' | 'SHOPPING' | 'HEALTH' | 'ENTERTAINMENT' | 'OTHER';
+  amount: number;
+  currency: string;
+  description?: string;
+  location?: string;
+  expenseDate: string;
+  paymentMethod?: string;
+  receiptUrl?: string;
+  tags?: string;
+  isReimbursable: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExpenseRequest {
+  planId: number;
+  userId: number;
+  category: string;
+  amount: number;
+  currency?: string;
+  description?: string;
+  location?: string;
+  expenseDate: string;
+  paymentMethod?: string;
+  receiptUrl?: string;
+  tags?: string;
+  isReimbursable?: boolean;
+  notes?: string;
+}
+
+export interface UpdateExpenseRequest {
+  category?: string;
+  amount?: number;
+  currency?: string;
+  description?: string;
+  location?: string;
+  expenseDate?: string;
+  paymentMethod?: string;
+  receiptUrl?: string;
+  tags?: string;
+  isReimbursable?: boolean;
+  notes?: string;
+}
+
+export interface ExpenseStats {
+  planId: number;
+  totalAmount: number;
+  categoryStats: Record<string, number>;
+  dateStats: Record<string, number>;
+}
+
+export interface BudgetAnalysis {
+  planId: number;
+  totalBudget: number;
+  totalExpense: number;
+  remainingBudget: number;
+  budgetUtilization: number;
+  categoryBreakdown: Record<string, number>;
+  basicSuggestions: string[];
+  aiAnalysis?: string;
+  hasAiAnalysis: boolean;
+}
+
+export interface BudgetOptimization {
+  planId: number;
+  currentBudget: number;
+  targetSavings: number;
+  optimizedBudget: number;
+  aiOptimization?: string;
+  hasAiOptimization: boolean;
 }

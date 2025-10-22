@@ -5,7 +5,8 @@ import {
   MessageOutlined, 
   UserOutlined, 
   LogoutOutlined,
-  PlusOutlined 
+  PlusOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,6 +38,14 @@ const Header = () => {
       label: '个人资料',
     },
     {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+    },
+    {
+      type: 'divider',
+    },
+    {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: '退出登录',
@@ -50,6 +59,8 @@ const Header = () => {
   const handleUserMenuClick = ({ key }) => {
     if (key === 'profile') {
       navigate('/profile');
+    } else if (key === 'settings') {
+      navigate('/settings');
     } else if (key === 'logout') {
       handleLogout();
     }

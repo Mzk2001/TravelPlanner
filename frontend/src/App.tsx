@@ -14,6 +14,10 @@ import TravelPlansPage from './pages/TravelPlansPage';
 import PlanDetailPage from './pages/PlanDetailPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
+import ExpenseManagementPage from './pages/ExpenseManagementPage';
+import BudgetAnalysisPage from './pages/BudgetAnalysisPage';
+import SettingsPage from './pages/SettingsPage';
+import DemoPage from './pages/DemoPage';
 
 // 样式
 import './App.css';
@@ -57,6 +61,30 @@ const App: React.FC = () => {
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/plans/:planId/expenses" element={
+                <ProtectedRoute>
+                  <ExpenseManagementPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/plans/:planId/budget" element={
+                <ProtectedRoute>
+                  <BudgetAnalysisPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/demo" element={
+                <ProtectedRoute>
+                  <DemoPage />
                 </ProtectedRoute>
               } />
               

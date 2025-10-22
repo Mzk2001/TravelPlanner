@@ -1,8 +1,11 @@
 package com.travelplanner.config;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +23,21 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+    
+    /**
+     * 处理JSON解析异常
+     */
+    @ExceptionHandler({JsonParseException.class, JsonMappingException.class, HttpMessageNotReadableException.class})
+    public ResponseEntity<Map<String, Object>> handleJsonException(Exception ex) {
+        log.error("JSON解析失败: {}", ex.getMessage());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "JSON格式错误");
+        response.put("message", "请求的JSON格式不正确，请检查JSON语法");
+        response.put("timestamp", System.currentTimeMillis());
+        
+        return ResponseEntity.badRequest().body(response);
+    }
     
     /**
      * 处理参数验证异常

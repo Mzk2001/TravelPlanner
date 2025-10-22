@@ -26,7 +26,9 @@ import {
   TeamOutlined,
   EnvironmentOutlined,
   RobotOutlined,
-  MessageOutlined
+  MessageOutlined,
+  CalculatorOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
@@ -43,6 +45,7 @@ const PlanDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [plan, setPlan] = useState<TravelPlan | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -134,6 +137,49 @@ const PlanDetailPage: React.FC = () => {
     }
   };
 
+  const handleGenerateAI = async () => {
+    if (!plan) return;
+
+    const apiKey = localStorage.getItem('qwen_api_key');
+    if (!apiKey) {
+      message.error('请先在设置页面配置API Key');
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const planContext = `计划名称: ${plan.planName}, 目的地: ${plan.destination}, 预算: ¥${plan.budget}, 人数: ${plan.groupSize}人, 旅行类型: ${plan.travelType}, 开始时间: ${plan.startDate}, 结束时间: ${plan.endDate}${plan.specialRequirements ? `, 特殊要求: ${plan.specialRequirements}` : ''}`;
+      
+      const userMessage = `请为这个旅游计划生成详细的行程安排和建议，包括景点推荐、交通方式、住宿建议、美食推荐等。`;
+      
+      const response = await apiService.generateTravelPlan(apiKey, userMessage, planContext);
+      
+      if (response.success) {
+        // 更新计划的AI生成内容
+        const updatedPlan = { ...plan, aiGenerated: response.result };
+        setPlan(updatedPlan);
+        message.success('AI建议生成成功');
+      } else {
+        message.error('生成失败，请检查API Key配置');
+      }
+    } catch (error) {
+      console.error('生成AI建议失败:', error);
+      message.error('生成失败，请稍后重试');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleRegenerateAI = async () => {
+    if (!plan) return;
+
+    Modal.confirm({
+      title: '重新生成AI建议',
+      content: '确定要重新生成AI建议吗？这将覆盖当前的内容。',
+      onOk: handleGenerateAI,
+    });
+  };
+
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
       DRAFT: 'default',
@@ -207,6 +253,18 @@ const PlanDetailPage: React.FC = () => {
                 与AI讨论
               </Button>
               <Button 
+                icon={<CalculatorOutlined />}
+                onClick={() => navigate(`/plans/${plan.id}/expenses`)}
+              >
+                费用管理
+              </Button>
+              <Button 
+                icon={<BarChartOutlined />}
+                onClick={() => navigate(`/plans/${plan.id}/budget`)}
+              >
+                预算分析
+              </Button>
+              <Button 
                 icon={<EditOutlined />}
                 onClick={handleEdit}
               >
@@ -274,16 +332,50 @@ const PlanDetailPage: React.FC = () => {
             </Card>
 
             {/* AI生成内容 */}
-            {plan.aiGenerated && (
-              <Card title="AI建议" extra={<RobotOutlined />}>
+            <Card 
+              title="AI建议" 
+              extra={
+                <Space>
+                  {!plan.aiGenerated && (
+                    <Button 
+                      type="primary" 
+                      icon={<RobotOutlined />}
+                      loading={generating}
+                      onClick={handleGenerateAI}
+                    >
+                      生成AI建议
+                    </Button>
+                  )}
+                  {plan.aiGenerated && (
+                    <Button 
+                      icon={<RobotOutlined />}
+                      onClick={handleRegenerateAI}
+                      loading={generating}
+                    >
+                      重新生成
+                    </Button>
+                  )}
+                </Space>
+              }
+            >
+              {plan.aiGenerated ? (
                 <div style={{ 
                   whiteSpace: 'pre-wrap',
                   lineHeight: '1.6'
                 }}>
                   {plan.aiGenerated}
                 </div>
-              </Card>
-            )}
+              ) : (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 0',
+                  color: '#999'
+                }}>
+                  <RobotOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+                  <div>点击"生成AI建议"获取智能旅游规划</div>
+                </div>
+              )}
+            </Card>
           </Col>
 
           {/* 统计信息 */}
@@ -335,6 +427,20 @@ const PlanDetailPage: React.FC = () => {
                   onClick={() => navigate(`/chat?planId=${plan.id}`)}
                 >
                   与AI讨论此计划
+                </Button>
+                <Button 
+                  block
+                  icon={<CalculatorOutlined />}
+                  onClick={() => navigate(`/plans/${plan.id}/expenses`)}
+                >
+                  费用管理
+                </Button>
+                <Button 
+                  block
+                  icon={<BarChartOutlined />}
+                  onClick={() => navigate(`/plans/${plan.id}/budget`)}
+                >
+                  预算分析
                 </Button>
                 <Button 
                   block

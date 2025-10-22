@@ -100,29 +100,47 @@ const ChatPage: React.FC = () => {
       createdAt: new Date().toISOString(),
     };
 
-    setConversations(prev => [...prev, tempUserMessage]);
+    // 添加AI思考中的提示消息
+    const thinkingMessage: Conversation = {
+      id: Date.now() + 1,
+      userId: user.id,
+      planId: selectedPlanId,
+      userMessage: '',
+      aiResponse: 'AI正在思考中，请稍候...',
+      messageType: 'text',
+      processingTime: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    setConversations(prev => [...prev, tempUserMessage, thinkingMessage]);
 
     try {
+      // 获取用户配置的API Key
+      const customApiKey = localStorage.getItem('qwen_api_key');
+      
       const chatRequest: ChatRequest = {
         userId: user.id,
         planId: selectedPlanId,
         message: userMessage,
+        apiKey: customApiKey || undefined
       };
 
       const response: ChatResponse = await apiService.sendMessage(chatRequest);
       
-      // 更新最后一条消息
+      // 更新AI思考中的消息为实际回复
       setConversations(prev => 
         prev.map(conv => 
-          conv.id === tempUserMessage.id 
+          conv.id === thinkingMessage.id 
             ? { ...conv, aiResponse: response.message, processingTime: response.processingTime }
             : conv
         )
       );
     } catch (error) {
       antdMessage.error('发送消息失败，请重试');
-      // 移除失败的消息
-      setConversations(prev => prev.filter(conv => conv.id !== tempUserMessage.id));
+      // 移除失败的消息和思考中的消息
+      setConversations(prev => prev.filter(conv => 
+        conv.id !== tempUserMessage.id && conv.id !== thinkingMessage.id
+      ));
     } finally {
       setLoading(false);
     }

@@ -56,6 +56,11 @@ const Header: React.FC = () => {
       label: 'AI助手',
       onClick: () => navigate('/chat'),
     },
+    {
+      key: '/demo',
+      label: 'AI演示',
+      onClick: () => navigate('/demo'),
+    },
   ];
 
   return (

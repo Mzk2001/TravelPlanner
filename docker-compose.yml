@@ -1,19 +1,22 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    container_name: travel_planner_db
-    environment:
-      POSTGRES_DB: travel_planner
-      POSTGRES_USER: travelplanner
-      POSTGRES_PASSWORD: password
+  travel-planner:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "5432:5432"
+      - "8080:8080"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # 持久化SQLite数据库文件
+      - ./backend/data:/app/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - JWT_SECRET=travelplanner-secret-key-2024
     restart: unless-stopped
-
-volumes:
-  postgres_data:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
