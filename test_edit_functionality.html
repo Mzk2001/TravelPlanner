@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试编辑功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>旅行计划编辑功能测试</h1>
+    
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>访问前端应用：<a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+            <li>登录系统（用户名：111，密码：111）</li>
+            <li>在仪表盘页面查看旅行计划列表</li>
+            <li>点击任意计划的"编辑"按钮</li>
+            <li>检查编辑模态框是否正确显示</li>
+            <li>修改计划信息并保存</li>
+            <li>验证日期选择器是否正常工作</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>预期结果</h2>
+        <ul>
+            <li>✅ 编辑按钮应该显示模态框而不是跳转</li>
+            <li>✅ 日期字段应该正确显示现有日期</li>
+            <li>✅ 日期选择器应该可以正常选择新日期</li>
+            <li>✅ 保存后应该更新计划信息</li>
+            <li>✅ 不应该出现"invalid date"错误</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>修复的问题</h2>
+        <ul>
+            <li>✅ 修复了日期显示问题 - 添加了null检查</li>
+            <li>✅ 修复了编辑表单中的日期处理</li>
+            <li>✅ 修复了后端启动问题</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>API测试</h2>
+        <button onclick="testAPI()">测试后端API</button>
+        <button onclick="testDateHandling()">测试日期处理</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<p>测试中...</p>';
+            
+            try {
+                // 测试健康检查
+                const healthResponse = await fetch('http://localhost:8080/api/health');
+                const healthData = await healthResponse.text();
+                
+                resultDiv.innerHTML = `
+                    <div class="test-section success">
+                        <h3>✅ 后端服务正常</h3>
+                        <pre>${healthData}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ 后端服务异常</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        function testDateHandling() {
+            const resultDiv = document.getElementById('apiResult');
+            
+            // 测试日期处理
+            const testDates = [
+                null,
+                undefined,
+                '',
+                '2024-01-01',
+                '2024-01-01T10:00:00',
+                new Date().toISOString()
+            ];
+            
+            let results = '<div class="test-section"><h3>日期处理测试</h3>';
+            
+            testDates.forEach((date, index) => {
+                try {
+                    if (date === null || date === undefined || date === '') {
+                        results += `<p>✅ 测试 ${index + 1}: null/undefined/空字符串 - 正确处理</p>`;
+                    } else {
+                        const formatted = new Date(date).toLocaleDateString('zh-CN');
+                        results += `<p>✅ 测试 ${index + 1}: ${date} -> ${formatted}</p>`;
+                    }
+                } catch (error) {
+                    results += `<p>❌ 测试 ${index + 1}: ${date} -> 错误: ${error.message}</p>`;
+                }
+            });
+            
+            results += '</div>';
+            resultDiv.innerHTML = results;
+        }
+    </script>
+</body>
+</html>

@@ -77,4 +77,4 @@ app:
     
   # AI服务配置
   ai:
-    mock-mode: true  # 启用桩程序模式，避免调用真实API
+    mock-mode: false  # 禁用桩程序模式，启用真正的通义千问API调用

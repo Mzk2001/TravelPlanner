@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复验证测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            color: #52c41a;
+        }
+        .error {
+            color: #ff4d4f;
+        }
+        .info {
+            color: #1890ff;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .code {
+            background: #f6f8fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>旅游计划系统修复验证</h1>
+    
+    <div class="test-section">
+        <h2>修复内容总结</h2>
+        <div class="success">
+            <h3>✅ 问题1：继续编辑功能修复</h3>
+            <p><strong>问题：</strong>点击"继续编辑"会生成新计划而不是在原有计划基础上修改</p>
+            <p><strong>解决方案：</strong></p>
+            <ul>
+                <li>移除了自动创建旅游计划的逻辑</li>
+                <li>修复了ChatPage中的URL参数解析，支持从URL获取planId</li>
+                <li>当用户选择现有计划时，AI会基于该计划进行讨论而不是创建新计划</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <h3>✅ 问题2：手动保存AI回答功能</h3>
+            <p><strong>问题：</strong>AI对话会自动保存为旅游计划，用户无法控制</p>
+            <p><strong>解决方案：</strong></p>
+            <ul>
+                <li>移除了自动保存逻辑</li>
+                <li>添加了手动保存按钮，用户可以选择是否保存AI回答</li>
+                <li>新增了后端API端点：<code>POST /conversations/save-as-plan</code></li>
+                <li>前端添加了"保存为计划"按钮，只在AI回答较长且未关联计划时显示</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>技术实现细节</h2>
+        
+        <h3>后端修改</h3>
+        <div class="code">
+// ConversationController.java
+// 1. 移除自动创建旅游计划逻辑
+// 2. 添加手动保存API端点
+@PostMapping("/save-as-plan")
+public ResponseEntity&lt;?&gt; saveAsPlan(@Valid @RequestBody SaveAsPlanRequest request)
+
+// ConversationService.java  
+// 添加更新对话记录计划ID的方法
+public void updatePlanId(Long conversationId, Long planId)
+        </div>
+
+        <h3>前端修改</h3>
+        <div class="code">
+// ChatPage.tsx
+// 1. 添加URL参数解析支持planId
+const [searchParams] = useSearchParams();
+useEffect(() => {
+  const planIdParam = searchParams.get('planId');
+  if (planIdParam) {
+    setSelectedPlanId(parseInt(planIdParam));
+  }
+}, [searchParams]);
+
+// 2. 添加手动保存功能
+const handleSaveAsPlan = async (conversationId: number) => {
+  const response = await apiService.saveAsPlan(user.id, conversationId);
+  // 显示保存按钮，只在AI回答较长且未关联计划时显示
+}
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <ol>
+            <li><strong>测试继续编辑功能：</strong>
+                <ul>
+                    <li>创建一个旅游计划</li>
+                    <li>点击"与AI讨论"按钮</li>
+                    <li>验证URL包含planId参数</li>
+                    <li>发送消息给AI，验证不会自动创建新计划</li>
+                </ul>
+            </li>
+            <li><strong>测试手动保存功能：</strong>
+                <ul>
+                    <li>在聊天页面发送消息给AI</li>
+                    <li>查看AI回复是否显示"保存为计划"按钮</li>
+                    <li>点击按钮验证是否能成功保存为旅游计划</li>
+                    <li>验证保存后按钮消失</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>预期结果</h2>
+        <div class="info">
+            <h3>继续编辑功能</h3>
+            <ul>
+                <li>✅ 点击"与AI讨论"会跳转到聊天页面并自动选择对应计划</li>
+                <li>✅ AI会基于现有计划提供建议，不会创建新计划</li>
+                <li>✅ 用户可以继续完善现有计划</li>
+            </ul>
+        </div>
+        
+        <div class="info">
+            <h3>手动保存功能</h3>
+            <ul>
+                <li>✅ AI回复不再自动保存为旅游计划</li>
+                <li>✅ 用户可以选择性地保存有价值的AI回答</li>
+                <li>✅ 保存按钮只在合适的时候显示</li>
+                <li>✅ 保存成功后用户会收到确认消息</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>API端点说明</h2>
+        <div class="code">
+POST /api/conversations/save-as-plan
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "conversationId": 123
+}
+
+Response:
+{
+  "planId": 456,
+  "message": "旅游计划创建成功"
+}
+        </div>
+    </div>
+
+    <script>
+        console.log('修复验证页面已加载');
+        console.log('主要修复内容：');
+        console.log('1. 移除了自动创建旅游计划的逻辑');
+        console.log('2. 添加了手动保存AI回答的功能');
+        console.log('3. 修复了继续编辑功能的URL参数解析');
+        console.log('4. 添加了后端API端点支持手动保存');
+    </script>
+</body>
+</html>

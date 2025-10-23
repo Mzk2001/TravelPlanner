@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, List, Button, Tag, Empty, Spin, message } from 'antd';
+import { Row, Col, Card, List, Button, Tag, Empty, Spin, message, Modal, Form, Input, DatePicker, InputNumber, Select } from 'antd';
 import { PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +9,9 @@ import dayjs from 'dayjs';
 const DashboardPage = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [form] = Form.useForm();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -27,15 +30,6 @@ const DashboardPage = () => {
     }
   };
 
-  const getStatusTag = (status) => {
-    const statusMap = {
-      DRAFT: { color: 'default', text: '草稿' },
-      PROCESSING: { color: 'processing', text: '生成中' },
-      COMPLETED: { color: 'success', text: '已完成' }
-    };
-    const config = statusMap[status] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
-  };
 
   const handleCreatePlan = () => {
     navigate('/chat');
@@ -45,8 +39,21 @@ const DashboardPage = () => {
     navigate(`/plan/${planId}`);
   };
 
-  const handleEditPlan = (planId) => {
-    navigate(`/chat/${planId}`);
+  const handleEditPlan = (plan) => {
+    setEditingPlan(plan);
+    form.setFieldsValue({
+      planName: plan.planName,
+      destination: plan.destination,
+      travelType: plan.travelType,
+      groupSize: plan.groupSize,
+      budget: plan.budget,
+      specialRequirements: plan.specialRequirements,
+      dateRange: [
+        plan.startDate ? dayjs(plan.startDate) : null,
+        plan.endDate ? dayjs(plan.endDate) : null
+      ]
+    });
+    setEditModalVisible(true);
   };
 
   const handleDeletePlan = async (planId) => {
@@ -56,6 +63,29 @@ const DashboardPage = () => {
       loadPlans();
     } catch (error) {
       message.error('删除失败');
+    }
+  };
+
+  const handleEditSubmit = async (values) => {
+    if (!editingPlan) return;
+
+    try {
+      const { dateRange, ...otherValues } = values;
+      
+      const updateData = {
+        ...otherValues,
+        startDate: dateRange[0].format('YYYY-MM-DD') + 'T00:00:00.000Z',
+        endDate: dateRange[1].format('YYYY-MM-DD') + 'T23:59:59.999Z',
+      };
+
+      console.log('更新计划数据:', updateData);
+      await planAPI.updatePlan(editingPlan.id, updateData);
+      message.success('计划更新成功！');
+      setEditModalVisible(false);
+      loadPlans();
+    } catch (error) {
+      console.error('更新计划失败:', error);
+      message.error('更新计划失败，请重试');
     }
   };
 
@@ -108,7 +138,7 @@ const DashboardPage = () => {
                       <Button 
                         type="link" 
                         icon={<EditOutlined />}
-                        onClick={() => handleEditPlan(plan.id)}
+                        onClick={() => handleEditPlan(plan)}
                       >
                         编辑
                       </Button>,
@@ -126,14 +156,13 @@ const DashboardPage = () => {
                       title={
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {plan.planName}
-                          {getStatusTag(plan.status)}
                         </div>
                       }
                       description={
                         <div>
                           <div>目的地：{plan.destination}</div>
                           <div>
-                            时间：{dayjs(plan.startDate).format('YYYY-MM-DD')} 至 {dayjs(plan.endDate).format('YYYY-MM-DD')}
+                            时间：{plan.startDate ? dayjs(plan.startDate).format('YYYY-MM-DD') : '未设置'} 至 {plan.endDate ? dayjs(plan.endDate).format('YYYY-MM-DD') : '未设置'}
                           </div>
                           <div>预算：¥{plan.budget}</div>
                           <div>人数：{plan.groupSize}人</div>
@@ -150,6 +179,105 @@ const DashboardPage = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* 编辑模态框 */}
+      <Modal
+        title="编辑旅行计划"
+        open={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleEditSubmit}
+        >
+          <Form.Item
+            name="planName"
+            label="计划名称"
+            rules={[{ required: true, message: '请输入计划名称' }]}
+          >
+            <Input placeholder="例如：北京三日游" />
+          </Form.Item>
+
+          <Form.Item
+            name="destination"
+            label="目的地"
+            rules={[{ required: true, message: '请输入目的地' }]}
+          >
+            <Input placeholder="例如：北京" />
+          </Form.Item>
+
+          <Form.Item
+            name="dateRange"
+            label="出行日期"
+            rules={[{ required: true, message: '请选择出行日期' }]}
+          >
+            <DatePicker.RangePicker 
+              style={{ width: '100%' }}
+              placeholder={['出发日期', '返回日期']}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="travelType"
+            label="旅行类型"
+            rules={[{ required: true, message: '请选择旅行类型' }]}
+          >
+            <Select placeholder="请选择旅行类型">
+              <Select.Option value="休闲">休闲</Select.Option>
+              <Select.Option value="商务">商务</Select.Option>
+              <Select.Option value="探险">探险</Select.Option>
+              <Select.Option value="文化">文化</Select.Option>
+              <Select.Option value="美食">美食</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="groupSize"
+            label="出行人数"
+            rules={[{ required: true, message: '请输入出行人数' }]}
+          >
+            <InputNumber 
+              min={1} 
+              max={20} 
+              style={{ width: '100%' }}
+              placeholder="请输入出行人数"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="budget"
+            label="预算（元）"
+          >
+            <InputNumber 
+              min={0} 
+              style={{ width: '100%' }}
+              placeholder="请输入预算金额"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="specialRequirements"
+            label="特殊要求"
+          >
+            <Input.TextArea 
+              rows={4}
+              placeholder="请输入特殊要求，如饮食偏好、住宿要求等"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Button onClick={() => setEditModalVisible(false)} style={{ marginRight: 8 }}>
+              取消
+            </Button>
+            <Button type="primary" htmlType="submit">
+              保存
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

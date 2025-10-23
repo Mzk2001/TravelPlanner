@@ -115,13 +115,9 @@ class ApiService {
   async getUserPlans(
     userId: number,
     page: number = 0,
-    size: number = 10,
-    status?: string
+    size: number = 10
   ): Promise<PageResponse<TravelPlan>> {
     const params: any = { userId, page, size };
-    if (status) {
-      params.status = status;
-    }
     const response = await this.api.get('/plans', { params });
     return response.data;
   }
@@ -131,10 +127,6 @@ class ApiService {
     return response.data;
   }
 
-  async updatePlanStatus(planId: number, status: string): Promise<{ message: string }> {
-    const response = await this.api.put(`/plans/${planId}/status`, { status });
-    return response.data;
-  }
 
   async deletePlan(planId: number): Promise<{ message: string }> {
     const response = await this.api.delete(`/plans/${planId}`);
@@ -206,6 +198,14 @@ class ApiService {
 
   async getPlaceDetail(placeId: string): Promise<PlaceDetail> {
     const response = await this.api.get(`/conversations/places/${placeId}`);
+    return response.data;
+  }
+
+  async saveAsPlan(userId: number, conversationId: number): Promise<{ planId: number; message: string }> {
+    const response = await this.api.post('/conversations/save-as-plan', {
+      userId,
+      conversationId
+    });
     return response.data;
   }
 

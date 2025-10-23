@@ -37,11 +37,11 @@ public class ConversationService {
      * @param messageType 消息类型
      * @param voiceFileUrl 语音文件URL
      * @param processingTime 处理时间
-     * @return 保存的对话记录
+     * @return 保存的对话记录ID
      */
-    public Conversation saveConversation(Long userId, Long planId, String userMessage,
-                                       String aiResponse, String messageType,
-                                       String voiceFileUrl, Long processingTime) {
+    public Long saveConversation(Long userId, Long planId, String userMessage,
+                                String aiResponse, String messageType,
+                                String voiceFileUrl, Long processingTime) {
         log.info("保存对话记录: userId={}, planId={}", userId, planId);
         
         Conversation conversation = new Conversation();
@@ -56,7 +56,7 @@ public class ConversationService {
         Conversation savedConversation = conversationRepository.save(conversation);
         log.info("对话记录保存成功: conversationId={}", savedConversation.getId());
         
-        return savedConversation;
+        return savedConversation.getId();
     }
     
     /**
@@ -151,5 +151,25 @@ public class ConversationService {
     public void deleteConversation(Long conversationId) {
         log.info("删除对话记录: conversationId={}", conversationId);
         conversationRepository.deleteById(conversationId);
+    }
+    
+    /**
+     * 更新对话记录的计划ID
+     * 
+     * @param conversationId 对话ID
+     * @param planId 计划ID
+     */
+    public void updatePlanId(Long conversationId, Long planId) {
+        log.info("更新对话记录的计划ID: conversationId={}, planId={}", conversationId, planId);
+        
+        Optional<Conversation> conversationOpt = conversationRepository.findById(conversationId);
+        if (conversationOpt.isPresent()) {
+            Conversation conversation = conversationOpt.get();
+            conversation.setPlanId(planId);
+            conversationRepository.save(conversation);
+            log.info("对话记录计划ID更新成功");
+        } else {
+            log.warn("对话记录不存在: conversationId={}", conversationId);
+        }
     }
 }

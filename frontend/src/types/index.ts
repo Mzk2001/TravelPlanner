@@ -48,7 +48,7 @@ export interface TravelPlan {
   travelType: string;
   groupSize: number;
   specialRequirements?: string;
-  status: 'DRAFT' | 'PLANNING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  status: 'DRAFT' | 'GENERATING' | 'COMPLETED' | 'CANCELLED';
   aiGenerated?: string;
   createdAt: string;
   updatedAt: string;
@@ -75,6 +75,7 @@ export interface UpdatePlanRequest {
   travelType?: string;
   groupSize?: number;
   specialRequirements?: string;
+  aiGenerated?: string;
 }
 
 export interface UpdateStatusRequest {

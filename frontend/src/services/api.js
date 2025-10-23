@@ -70,17 +70,14 @@ export const planAPI = {
   getPlan: (planId) => 
     api.get(`/plans/${planId}`),
   
-  getUserPlans: (userId, page = 0, size = 10, status = null) => {
+  getUserPlans: (userId, page = 0, size = 10) => {
     const params = { userId, page, size };
-    if (status) params.status = status;
     return api.get('/plans', { params });
   },
   
   updatePlan: (planId, planData) => 
     api.put(`/plans/${planId}`, planData),
   
-  updatePlanStatus: (planId, status) => 
-    api.put(`/plans/${planId}/status`, { status }),
   
   deletePlan: (planId) => 
     api.delete(`/plans/${planId}`),
@@ -112,6 +109,9 @@ export const conversationAPI = {
   
   getPlaceDetail: (placeId) => 
     api.get(`/conversations/places/${placeId}`),
+  
+  saveAsPlan: (planData) => 
+    api.post('/conversations/save-as-plan-direct', planData),
 };
 
 export default api;

@@ -109,8 +109,8 @@ const TravelPlansPage: React.FC = () => {
         // 更新计划
         const updateData: UpdatePlanRequest = {
           ...otherValues,
-          startDate: dateRange[0].format('YYYY-MM-DD HH:mm:ss'),
-          endDate: dateRange[1].format('YYYY-MM-DD HH:mm:ss'),
+          startDate: dateRange[0].format('YYYY-MM-DD') + 'T00:00:00.000Z',
+          endDate: dateRange[1].format('YYYY-MM-DD') + 'T23:59:59.999Z',
         };
         await apiService.updatePlan(editingPlan.id, updateData);
         message.success('更新成功');
@@ -119,8 +119,8 @@ const TravelPlansPage: React.FC = () => {
         const createData: CreatePlanRequest = {
           userId: user.id,
           ...otherValues,
-          startDate: dateRange[0].format('YYYY-MM-DD HH:mm:ss'),
-          endDate: dateRange[1].format('YYYY-MM-DD HH:mm:ss'),
+          startDate: dateRange[0].format('YYYY-MM-DD') + 'T00:00:00.000Z',
+          endDate: dateRange[1].format('YYYY-MM-DD') + 'T23:59:59.999Z',
         };
         await apiService.createPlan(createData);
         message.success('创建成功');
@@ -133,27 +133,6 @@ const TravelPlansPage: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      DRAFT: 'default',
-      PLANNING: 'processing',
-      CONFIRMED: 'success',
-      COMPLETED: 'success',
-      CANCELLED: 'error',
-    };
-    return colors[status] || 'default';
-  };
-
-  const getStatusText = (status: string) => {
-    const texts: { [key: string]: string } = {
-      DRAFT: '草稿',
-      PLANNING: '规划中',
-      CONFIRMED: '已确认',
-      COMPLETED: '已完成',
-      CANCELLED: '已取消',
-    };
-    return texts[status] || status;
-  };
 
   const columns = [
     {
@@ -197,16 +176,6 @@ const TravelPlansPage: React.FC = () => {
       title: '人数',
       dataIndex: 'groupSize',
       key: 'groupSize',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {getStatusText(status)}
-        </Tag>
-      ),
     },
     {
       title: '操作',

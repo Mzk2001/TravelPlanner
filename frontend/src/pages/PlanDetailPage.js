@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Spin, message, Tag, Button } from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { planAPI } from '../services/api';
 import dayjs from 'dayjs';
@@ -26,15 +26,6 @@ const PlanDetailPage = () => {
     }
   };
 
-  const getStatusTag = (status) => {
-    const statusMap = {
-      DRAFT: { color: 'default', text: '草稿' },
-      PROCESSING: { color: 'processing', text: '生成中' },
-      COMPLETED: { color: 'success', text: '已完成' }
-    };
-    const config = statusMap[status] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
-  };
 
   if (loading) {
     return (
@@ -66,20 +57,9 @@ const PlanDetailPage = () => {
         >
           返回
         </Button>
-        <Button 
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/chat/${id}`)}
-          style={{ marginLeft: '8px' }}
-        >
-          继续编辑
-        </Button>
       </div>
 
       <Card title={plan.planName}>
-        <div style={{ marginBottom: '16px' }}>
-          {getStatusTag(plan.status)}
-        </div>
         
         <div style={{ marginBottom: '16px' }}>
           <h3>基本信息</h3>

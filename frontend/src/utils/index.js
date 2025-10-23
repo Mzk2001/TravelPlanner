@@ -9,29 +9,6 @@ export const formatDateTime = (date) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
 }
 
-// 状态标签颜色映射
-export const getStatusColor = (status) => {
-  const statusColorMap = {
-    DRAFT: 'default',
-    PLANNING: 'processing',
-    CONFIRMED: 'success',
-    COMPLETED: 'success',
-    CANCELLED: 'error',
-  }
-  return statusColorMap[status] || 'default'
-}
-
-// 状态文本映射
-export const getStatusText = (status) => {
-  const statusTextMap = {
-    DRAFT: '草稿',
-    PLANNING: '规划中',
-    CONFIRMED: '已确认',
-    COMPLETED: '已完成',
-    CANCELLED: '已取消',
-  }
-  return statusTextMap[status] || status
-}
 
 // 金额格式化
 export const formatCurrency = (amount) => {

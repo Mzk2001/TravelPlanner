@@ -47,8 +47,9 @@ const PlanDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [editAiModalVisible, setEditAiModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [aiForm] = Form.useForm();
 
   // 定义parser函数避免类型问题
   const parseCurrency = (value: string | undefined): number => {
@@ -87,9 +88,6 @@ const PlanDetailPage: React.FC = () => {
     setEditModalVisible(true);
   };
 
-  const handleStatusUpdate = () => {
-    setStatusModalVisible(true);
-  };
 
   const handleDelete = async () => {
     if (!plan) return;
@@ -124,18 +122,6 @@ const PlanDetailPage: React.FC = () => {
     }
   };
 
-  const handleStatusSubmit = async (values: { status: string }) => {
-    if (!plan) return;
-
-    try {
-      await apiService.updatePlanStatus(plan.id, values.status);
-      setPlan({ ...plan, status: values.status as any });
-      setStatusModalVisible(false);
-      message.success('状态更新成功');
-    } catch (error) {
-      message.error('状态更新失败');
-    }
-  };
 
   const handleGenerateAI = async () => {
     if (!plan) return;
@@ -155,10 +141,27 @@ const PlanDetailPage: React.FC = () => {
       const response = await apiService.generateTravelPlan(apiKey, userMessage, planContext);
       
       if (response.success) {
-        // 更新计划的AI生成内容
-        const updatedPlan = { ...plan, aiGenerated: response.result };
-        setPlan(updatedPlan);
-        message.success('AI建议生成成功');
+        // 更新计划的AI生成内容并保存到数据库
+        try {
+          const updateData: UpdatePlanRequest = {
+            planName: plan.planName,
+            destination: plan.destination,
+            startDate: plan.startDate,
+            endDate: plan.endDate,
+            budget: plan.budget,
+            travelType: plan.travelType,
+            groupSize: plan.groupSize,
+            specialRequirements: plan.specialRequirements,
+            aiGenerated: response.result
+          };
+          
+          const updatedPlan = await apiService.updatePlan(plan.id, updateData);
+          setPlan(updatedPlan);
+          message.success('AI建议生成成功');
+        } catch (error) {
+          console.error('保存AI建议失败:', error);
+          message.error('AI建议生成成功，但保存失败');
+        }
       } else {
         message.error('生成失败，请检查API Key配置');
       }
@@ -180,27 +183,40 @@ const PlanDetailPage: React.FC = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      DRAFT: 'default',
-      PLANNING: 'processing',
-      CONFIRMED: 'success',
-      COMPLETED: 'success',
-      CANCELLED: 'error',
-    };
-    return colors[status] || 'default';
+  const handleEditAI = () => {
+    if (!plan) return;
+    
+    aiForm.setFieldsValue({
+      aiGenerated: plan.aiGenerated || ''
+    });
+    setEditAiModalVisible(true);
   };
 
-  const getStatusText = (status: string) => {
-    const texts: { [key: string]: string } = {
-      DRAFT: '草稿',
-      PLANNING: '规划中',
-      CONFIRMED: '已确认',
-      COMPLETED: '已完成',
-      CANCELLED: '已取消',
-    };
-    return texts[status] || status;
+  const handleEditAISubmit = async (values: any) => {
+    if (!plan) return;
+
+    try {
+      const updateData: UpdatePlanRequest = {
+        planName: plan.planName,
+        destination: plan.destination,
+        startDate: plan.startDate,
+        endDate: plan.endDate,
+        budget: plan.budget,
+        travelType: plan.travelType,
+        groupSize: plan.groupSize,
+        specialRequirements: plan.specialRequirements,
+        aiGenerated: values.aiGenerated
+      };
+      
+      const updatedPlan = await apiService.updatePlan(plan.id, updateData);
+      setPlan(updatedPlan);
+      setEditAiModalVisible(false);
+      message.success('AI内容更新成功');
+    } catch (error) {
+      message.error('更新失败');
+    }
   };
+
 
   if (loading) {
     return (
@@ -235,9 +251,6 @@ const PlanDetailPage: React.FC = () => {
               {plan.planName}
             </Title>
             <Space style={{ marginTop: 8 }}>
-              <Tag color={getStatusColor(plan.status)}>
-                {getStatusText(plan.status)}
-              </Tag>
               <span style={{ color: '#999' }}>
                 创建于 {dayjs(plan.createdAt).format('YYYY-MM-DD HH:mm')}
               </span>
@@ -269,11 +282,6 @@ const PlanDetailPage: React.FC = () => {
                 onClick={handleEdit}
               >
                 编辑
-              </Button>
-              <Button 
-                onClick={handleStatusUpdate}
-              >
-                更新状态
               </Button>
               <Button 
                 danger 
@@ -347,13 +355,21 @@ const PlanDetailPage: React.FC = () => {
                     </Button>
                   )}
                   {plan.aiGenerated && (
-                    <Button 
-                      icon={<RobotOutlined />}
-                      onClick={handleRegenerateAI}
-                      loading={generating}
-                    >
-                      重新生成
-                    </Button>
+                    <>
+                      <Button 
+                        icon={<EditOutlined />}
+                        onClick={handleEditAI}
+                      >
+                        编辑内容
+                      </Button>
+                      <Button 
+                        icon={<RobotOutlined />}
+                        onClick={handleRegenerateAI}
+                        loading={generating}
+                      >
+                        重新生成
+                      </Button>
+                    </>
                   )}
                 </Space>
               }
@@ -448,12 +464,6 @@ const PlanDetailPage: React.FC = () => {
                   onClick={handleEdit}
                 >
                   编辑计划
-                </Button>
-                <Button 
-                  block
-                  onClick={handleStatusUpdate}
-                >
-                  更新状态
                 </Button>
               </Space>
             </Card>
@@ -570,44 +580,44 @@ const PlanDetailPage: React.FC = () => {
           </Form>
         </Modal>
 
-        {/* 状态更新模态框 */}
+        {/* 编辑AI内容模态框 */}
         <Modal
-          title="更新计划状态"
-          open={statusModalVisible}
-          onCancel={() => setStatusModalVisible(false)}
+          title="编辑AI建议内容"
+          open={editAiModalVisible}
+          onCancel={() => setEditAiModalVisible(false)}
           footer={null}
+          width={800}
         >
           <Form
+            form={aiForm}
             layout="vertical"
-            onFinish={handleStatusSubmit}
-            initialValues={{ status: plan.status }}
+            onFinish={handleEditAISubmit}
           >
             <Form.Item
-              name="status"
-              label="计划状态"
-              rules={[{ required: true, message: '请选择计划状态' }]}
+              name="aiGenerated"
+              label="AI建议内容"
+              rules={[{ required: true, message: '请输入AI建议内容' }]}
             >
-              <Select placeholder="请选择计划状态">
-                <Select.Option value="DRAFT">草稿</Select.Option>
-                <Select.Option value="PLANNING">规划中</Select.Option>
-                <Select.Option value="CONFIRMED">已确认</Select.Option>
-                <Select.Option value="COMPLETED">已完成</Select.Option>
-                <Select.Option value="CANCELLED">已取消</Select.Option>
-              </Select>
+              <Input.TextArea 
+                rows={15}
+                placeholder="请编辑AI生成的旅游建议内容..."
+                style={{ fontFamily: 'monospace' }}
+              />
             </Form.Item>
 
             <Form.Item>
               <Space>
                 <Button type="primary" htmlType="submit">
-                  更新
+                  保存修改
                 </Button>
-                <Button onClick={() => setStatusModalVisible(false)}>
+                <Button onClick={() => setEditAiModalVisible(false)}>
                   取消
                 </Button>
               </Space>
             </Form.Item>
           </Form>
         </Modal>
+
       </Content>
     </Layout>
   );

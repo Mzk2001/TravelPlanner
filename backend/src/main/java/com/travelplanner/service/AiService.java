@@ -60,9 +60,16 @@ public class AiService {
             Map<String, Object> request = new HashMap<>();
             request.put("model", "qwen-turbo");
             
-            // 使用prompt字段而不是messages
+            // 使用messages格式（通义千问标准格式）
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", buildPrompt(userMessage, planContext));
+            messages.add(message);
+            
+            // 构建input对象（通义千问的正确格式）
             Map<String, Object> input = new HashMap<>();
-            input.put("prompt", buildPrompt(userMessage, planContext));
+            input.put("messages", messages);
             request.put("input", input);
             
             // 构建parameters对象
@@ -213,13 +220,19 @@ public class AiService {
             Map<String, Object> request = new HashMap<>();
             request.put("model", "qwen-turbo");
             
-            Map<String, Object> messages = new HashMap<>();
-            messages.put("role", "user");
-            messages.put("content", buildBudgetAnalysisPrompt(budgetData, expenseData));
+            // 使用正确的messages格式
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", buildBudgetAnalysisPrompt(budgetData, expenseData));
+            messages.add(message);
+            request.put("messages", messages);
             
-            request.put("messages", new Object[]{messages});
-            request.put("temperature", 0.3);
-            request.put("max_tokens", 1500);
+            // 构建parameters对象
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("temperature", 0.3);
+            parameters.put("max_tokens", 1500);
+            request.put("parameters", parameters);
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -264,13 +277,19 @@ public class AiService {
             Map<String, Object> request = new HashMap<>();
             request.put("model", "qwen-turbo");
             
-            Map<String, Object> messages = new HashMap<>();
-            messages.put("role", "user");
-            messages.put("content", buildBudgetOptimizationPrompt(currentBudget, targetSavings));
+            // 使用正确的messages格式
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", buildBudgetOptimizationPrompt(currentBudget, targetSavings));
+            messages.add(message);
+            request.put("messages", messages);
             
-            request.put("messages", new Object[]{messages});
-            request.put("temperature", 0.4);
-            request.put("max_tokens", 1200);
+            // 构建parameters对象
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("temperature", 0.4);
+            parameters.put("max_tokens", 1200);
+            request.put("parameters", parameters);
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -412,10 +431,13 @@ public class AiService {
             Map<String, Object> request = new HashMap<>();
             request.put("model", "qwen-turbo");
             
-            // 使用prompt字段而不是messages
-            Map<String, Object> input = new HashMap<>();
-            input.put("prompt", buildPrompt(userMessage, planContext));
-            request.put("input", input);
+            // 使用messages格式（通义千问标准格式）
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", buildPrompt(userMessage, planContext));
+            messages.add(message);
+            request.put("messages", messages);
             
             // 构建parameters对象
             Map<String, Object> parameters = new HashMap<>();

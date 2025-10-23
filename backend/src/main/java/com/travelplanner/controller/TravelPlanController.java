@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.Map;
 import com.travelplanner.util.MapUtils;
 import java.util.Optional;
 
@@ -132,9 +131,15 @@ public class TravelPlanController {
                                       @Valid @RequestBody UpdatePlanRequest request) {
         try {
             log.info("更新旅游计划: planId={}", planId);
+            log.info("接收到的请求数据: planName={}, destination={}, budget={}, groupSize={}, travelType={}", 
+                    request.getPlanName(), request.getDestination(), request.getBudget(), 
+                    request.getGroupSize(), request.getTravelType());
+            log.info("日期信息: startDate={}, endDate={}", request.getStartDate(), request.getEndDate());
+            log.info("特殊需求长度: {}", request.getSpecialRequirements() != null ? request.getSpecialRequirements().length() : 0);
             
             Optional<TravelPlan> planOpt = travelPlanService.findById(planId);
             if (!planOpt.isPresent()) {
+                log.warn("计划不存在: planId={}", planId);
                 return ResponseEntity.notFound().build();
             }
             
@@ -147,41 +152,21 @@ public class TravelPlanController {
             plan.setTravelType(request.getTravelType());
             plan.setGroupSize(request.getGroupSize());
             plan.setSpecialRequirements(request.getSpecialRequirements());
+            if (request.getAiGenerated() != null) {
+                plan.setAiGenerated(request.getAiGenerated());
+            }
             
             TravelPlan updatedPlan = travelPlanService.updatePlan(plan);
+            log.info("计划更新成功: planId={}", planId);
             return ResponseEntity.ok(convertToResponse(updatedPlan));
             
         } catch (Exception e) {
-            log.error("更新旅游计划失败: {}", e.getMessage());
+            log.error("更新旅游计划失败: planId={}, error={}", planId, e.getMessage(), e);
             return ResponseEntity.badRequest()
                     .body(MapUtils.of("error", e.getMessage()));
         }
     }
     
-    /**
-     * 更新计划状态
-     * 
-     * @param planId 计划ID
-     * @param request 状态更新请求
-     * @return 更新结果
-     */
-    @PutMapping("/{planId}/status")
-    public ResponseEntity<?> updatePlanStatus(@PathVariable Long planId,
-                                            @RequestBody UpdateStatusRequest request) {
-        try {
-            log.info("更新计划状态: planId={}, status={}", planId, request.getStatus());
-            
-            TravelPlan.PlanStatus status = TravelPlan.PlanStatus.valueOf(request.getStatus().toUpperCase());
-            travelPlanService.updatePlanStatus(planId, status);
-            
-            return ResponseEntity.ok(MapUtils.of("message", "状态更新成功"));
-            
-        } catch (Exception e) {
-            log.error("更新计划状态失败: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(MapUtils.of("error", e.getMessage()));
-        }
-    }
     
     /**
      * 删除旅游计划
@@ -268,6 +253,7 @@ public class TravelPlanController {
         private String travelType;
         private Integer groupSize;
         private String specialRequirements;
+        private String aiGenerated;
         
         // Getters and Setters
         public String getPlanName() { return planName; }
@@ -286,14 +272,10 @@ public class TravelPlanController {
         public void setGroupSize(Integer groupSize) { this.groupSize = groupSize; }
         public String getSpecialRequirements() { return specialRequirements; }
         public void setSpecialRequirements(String specialRequirements) { this.specialRequirements = specialRequirements; }
+        public String getAiGenerated() { return aiGenerated; }
+        public void setAiGenerated(String aiGenerated) { this.aiGenerated = aiGenerated; }
     }
     
-    public static class UpdateStatusRequest {
-        private String status;
-        
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-    }
     
     public static class PlanResponse {
         private Long id;

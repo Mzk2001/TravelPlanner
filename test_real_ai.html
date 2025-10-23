@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试真实通义千问API调用</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .ai-response { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; padding: 15px; margin: 10px 0; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>测试真实通义千问API调用</h1>
+    
+    <div class="test-section">
+        <h3>🔧 配置信息</h3>
+        <div class="info">
+            <strong>当前状态：</strong>已禁用桩程序模式，启用真实通义千问API调用<br>
+            <strong>API Key：</strong>sk-cc0831e2c3d045ccb72a4c75ad234333<br>
+            <strong>API端点：</strong>https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation<br>
+            <strong>模型：</strong>qwen-turbo
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>1. 测试AI对话功能</h3>
+        <button onclick="testAiChat()">测试AI对话</button>
+        <div id="chatResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试旅游计划生成</h3>
+        <button onclick="testTravelPlan()">生成北京3日游计划</button>
+        <div id="planResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试预算分析</h3>
+        <button onclick="testBudgetAnalysis()">测试预算分析</button>
+        <div id="budgetResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 测试API Key验证</h3>
+        <button onclick="testApiKey()">验证API Key</button>
+        <div id="apiKeyResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMTEiLCJpYXQiOjE3MzIzMjQ5NzIsImV4cCI6MTczMjQxMTM3Mn0.8QZ8QZ8QZ8QZ8QZ8QZ8QZ8QZ8QZ8QZ8QZ8QZ8QZ8';
+        
+        async function testAiChat() {
+            const resultDiv = document.getElementById('chatResult');
+            resultDiv.innerHTML = '正在测试AI对话功能...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/conversations/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        userId: 3,
+                        userMessage: '请帮我制定一个上海2日游的旅行计划，预算5000元',
+                        messageType: 'TEXT'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">AI对话测试成功！</div>`;
+                    resultDiv.innerHTML += `<div class="ai-response"><strong>AI回复：</strong><br>${data.aiResponse}</div>`;
+                    resultDiv.innerHTML += `<div class="info">处理时间：${data.processingTime}ms</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">AI对话测试失败：${data.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">测试失败: ${error.message}</div>`;
+            }
+        }
+        
+        async function testTravelPlan() {
+            const resultDiv = document.getElementById('planResult');
+            resultDiv.innerHTML = '正在生成旅游计划...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/conversations/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        userId: 3,
+                        userMessage: '请帮我制定一个北京3日游的详细旅行计划，包含景点、美食、住宿和交通安排',
+                        messageType: 'TEXT'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">旅游计划生成成功！</div>`;
+                    resultDiv.innerHTML += `<div class="ai-response"><strong>AI生成的计划：</strong><br>${data.aiResponse}</div>`;
+                    resultDiv.innerHTML += `<div class="info">处理时间：${data.processingTime}ms</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">旅游计划生成失败：${data.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">测试失败: ${error.message}</div>`;
+            }
+        }
+        
+        async function testBudgetAnalysis() {
+            const resultDiv = document.getElementById('budgetResult');
+            resultDiv.innerHTML = '正在测试预算分析...';
+            
+            try {
+                // 先创建一个计划
+                const planResponse = await fetch(`${API_BASE}/plans`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        userId: 3,
+                        planName: '测试预算分析计划',
+                        destination: '北京',
+                        startDate: '2024-01-01T00:00:00',
+                        endDate: '2024-01-03T00:00:00',
+                        budget: 5000,
+                        travelType: '休闲',
+                        groupSize: 2,
+                        specialRequirements: '测试特殊需求'
+                    })
+                });
+                
+                const planData = await planResponse.json();
+                
+                if (planResponse.ok) {
+                    resultDiv.innerHTML = `<div class="success">计划创建成功，ID: ${planData.id}</div>`;
+                    
+                    // 测试预算分析
+                    const analysisResponse = await fetch(`${API_BASE}/ai/budget-analysis`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${TOKEN}`
+                        },
+                        body: JSON.stringify({
+                            planId: planData.id,
+                            budgetData: {
+                                totalBudget: 5000,
+                                remainingBudget: 3000
+                            },
+                            expenseData: {
+                                totalExpense: 2000,
+                                budgetUtilization: 40,
+                                categoryBreakdown: {
+                                    '交通': 800,
+                                    '住宿': 600,
+                                    '餐饮': 400,
+                                    '门票': 200
+                                }
+                            }
+                        })
+                    });
+                    
+                    const analysisData = await analysisResponse.json();
+                    
+                    if (analysisResponse.ok) {
+                        resultDiv.innerHTML += `<div class="success">预算分析测试成功！</div>`;
+                        resultDiv.innerHTML += `<div class="ai-response"><strong>AI分析结果：</strong><br>${analysisData}</div>`;
+                    } else {
+                        resultDiv.innerHTML += `<div class="error">预算分析失败：${analysisData.message || '未知错误'}</div>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="error">计划创建失败：${planData.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">测试失败: ${error.message}</div>`;
+            }
+        }
+        
+        async function testApiKey() {
+            const resultDiv = document.getElementById('apiKeyResult');
+            resultDiv.innerHTML = '正在验证API Key...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/ai/test`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">API Key验证成功！</div>`;
+                    resultDiv.innerHTML += `<div class="info">${data.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">API Key验证失败：${data.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">验证失败: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

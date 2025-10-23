@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Layout, 
   Card, 
@@ -13,7 +14,9 @@ import {
   Col,
   Tooltip,
   Upload,
-  message as antdMessage
+  message as antdMessage,
+  Modal,
+  Form
 } from 'antd';
 import { 
   SendOutlined, 
@@ -21,7 +24,9 @@ import {
   UserOutlined, 
   AudioOutlined,
   AudioMutedOutlined,
-  FileOutlined
+  FileOutlined,
+  SaveOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
@@ -36,12 +41,16 @@ const { Option } = Select;
 
 const ChatPage: React.FC = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [message, setMessage] = useState('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | undefined>();
   const [plans, setPlans] = useState<TravelPlan[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingConversation, setEditingConversation] = useState<Conversation | null>(null);
+  const [savedPlanId, setSavedPlanId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,6 +59,14 @@ const ChatPage: React.FC = () => {
       fetchPlans();
     }
   }, [user, selectedPlanId]);
+
+  // 从URL参数初始化selectedPlanId
+  useEffect(() => {
+    const planIdParam = searchParams.get('planId');
+    if (planIdParam) {
+      setSelectedPlanId(parseInt(planIdParam));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     scrollToBottom();
@@ -128,12 +145,18 @@ const ChatPage: React.FC = () => {
       const response: ChatResponse = await apiService.sendMessage(chatRequest);
       
       // 更新AI思考中的消息为实际回复
+      console.log('AI回复内容:', response.message);
+      console.log('处理时间:', response.processingTime);
+      
       setConversations(prev => 
-        prev.map(conv => 
-          conv.id === thinkingMessage.id 
-            ? { ...conv, aiResponse: response.message, processingTime: response.processingTime }
-            : conv
-        )
+        prev.map(conv => {
+          if (conv.id === thinkingMessage.id) {
+            const updatedConv = { ...conv, aiResponse: response.message, processingTime: response.processingTime };
+            console.log('更新后的对话:', updatedConv);
+            return updatedConv;
+          }
+          return conv;
+        })
       );
     } catch (error) {
       antdMessage.error('发送消息失败，请重试');
@@ -199,6 +222,53 @@ const ChatPage: React.FC = () => {
       antdMessage.error('语音消息发送失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveAsPlan = async (conversationId: number) => {
+    if (!user) return;
+    
+    try {
+      const response = await apiService.saveAsPlan(user.id, conversationId);
+      antdMessage.success('旅游计划保存成功！');
+      
+      // 记录保存的计划ID
+      setSavedPlanId(response.planId);
+      
+      // 刷新计划列表
+      fetchPlans();
+    } catch (error) {
+      antdMessage.error('保存旅游计划失败');
+    }
+  };
+
+  const handleEditPlan = (conversation: Conversation) => {
+    setEditingConversation(conversation);
+    setEditModalVisible(true);
+  };
+
+  const handleEditSubmit = async (values: any) => {
+    if (!editingConversation || !user) return;
+    
+    try {
+      // 更新对话中的AI回复
+      const updatedConversation = {
+        ...editingConversation,
+        aiResponse: values.aiResponse
+      };
+      
+      // 这里可以调用API更新对话，或者直接更新本地状态
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === editingConversation.id ? updatedConversation : conv
+        )
+      );
+      
+      antdMessage.success('AI方案修改成功！');
+      setEditModalVisible(false);
+      setEditingConversation(null);
+    } catch (error) {
+      antdMessage.error('修改失败，请重试');
     }
   };
 
@@ -325,11 +395,56 @@ const ChatPage: React.FC = () => {
                             <div style={{ 
                               fontSize: '12px', 
                               color: '#999',
-                              marginTop: 4
+                              marginTop: 4,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
                             }}>
-                              {dayjs(conv.createdAt).format('HH:mm')}
-                              {conv.processingTime > 0 && (
-                                <span> · {conv.processingTime}ms</span>
+                              <span>
+                                {dayjs(conv.createdAt).format('HH:mm')}
+                                {conv.processingTime > 0 && (
+                                  <span> · {conv.processingTime}ms</span>
+                                )}
+                              </span>
+                              {(() => {
+                                console.log('检查按钮显示条件:', {
+                                  aiResponse: conv.aiResponse,
+                                  hasResponse: !!conv.aiResponse,
+                                  notThinking: conv.aiResponse !== 'AI正在思考中，请稍候...',
+                                  shouldShow: conv.aiResponse && conv.aiResponse !== 'AI正在思考中，请稍候...'
+                                });
+                                return conv.aiResponse && conv.aiResponse !== 'AI正在思考中，请稍候...';
+                              })() && (
+                                <Space size="small">
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<SaveOutlined />}
+                                    onClick={() => handleSaveAsPlan(conv.id)}
+                                    style={{ 
+                                      padding: 0, 
+                                      height: 'auto',
+                                      fontSize: '12px',
+                                      color: '#1890ff'
+                                    }}
+                                  >
+                                    保存为计划
+                                  </Button>
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<EditOutlined />}
+                                    onClick={() => handleEditPlan(conv)}
+                                    style={{ 
+                                      padding: 0, 
+                                      height: 'auto',
+                                      fontSize: '12px',
+                                      color: '#52c41a'
+                                    }}
+                                  >
+                                    编辑方案
+                                  </Button>
+                                </Space>
                               )}
                             </div>
                           </div>
@@ -390,6 +505,47 @@ const ChatPage: React.FC = () => {
           </Col>
         </Row>
       </Content>
+
+      {/* 编辑AI方案模态框 */}
+      <Modal
+        title="编辑AI方案"
+        open={editModalVisible}
+        onCancel={() => {
+          setEditModalVisible(false);
+          setEditingConversation(null);
+        }}
+        onOk={() => {
+          // 这里可以添加表单提交逻辑
+          const form = document.getElementById('edit-form') as HTMLFormElement;
+          if (form) {
+            form.requestSubmit();
+          }
+        }}
+        width={800}
+        okText="保存修改"
+        cancelText="取消"
+      >
+        <Form
+          id="edit-form"
+          layout="vertical"
+          onFinish={handleEditSubmit}
+          initialValues={{
+            aiResponse: editingConversation?.aiResponse || ''
+          }}
+        >
+          <Form.Item
+            name="aiResponse"
+            label="AI方案内容"
+            rules={[{ required: true, message: '请输入AI方案内容' }]}
+          >
+            <TextArea
+              rows={12}
+              placeholder="请编辑AI生成的旅游方案..."
+              style={{ fontFamily: 'monospace' }}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Layout>
   );
 };

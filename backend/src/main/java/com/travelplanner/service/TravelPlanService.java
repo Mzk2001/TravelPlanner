@@ -112,21 +112,6 @@ public class TravelPlanService {
         return travelPlanRepository.save(plan);
     }
     
-    /**
-     * 更新计划状态
-     * 
-     * @param planId 计划ID
-     * @param status 新状态
-     */
-    public void updatePlanStatus(Long planId, TravelPlan.PlanStatus status) {
-        log.info("更新计划状态: planId={}, status={}", planId, status);
-        
-        TravelPlan plan = travelPlanRepository.findById(planId)
-                .orElseThrow(() -> new RuntimeException("旅游计划不存在"));
-        
-        plan.setStatus(status);
-        travelPlanRepository.save(plan);
-    }
     
     /**
      * 设置AI生成内容
