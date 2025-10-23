@@ -74,3 +74,7 @@ app:
     api-key: sk-cc0831e2c3d045ccb72a4c75ad234333
     base-url: https://dashscope.aliyuncs.com/api/v1
     model: qwen-turbo
+    
+  # AI服务配置
+  ai:
+    mock-mode: true  # 启用桩程序模式，避免调用真实API

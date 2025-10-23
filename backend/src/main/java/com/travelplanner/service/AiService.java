@@ -36,6 +36,9 @@ public class AiService {
     @Value("${app.qwen.base-url:https://dashscope.aliyuncs.com/api/v1}")
     private String qwenBaseUrl;
     
+    @Value("${app.ai.mock-mode:true}")
+    private boolean mockMode;
+    
     /**
      * 使用通义千问生成旅游计划
      * 
@@ -45,6 +48,12 @@ public class AiService {
      */
     public String generateTravelPlan(String userMessage, String planContext) {
         try {
+            // 如果启用桩程序模式，返回模拟数据
+            if (mockMode) {
+                log.info("使用桩程序模式生成旅游计划");
+                return generateMockTravelPlan(userMessage, planContext);
+            }
+            
             log.info("使用通义千问生成旅游计划");
             
             // 构建请求体 - 使用通义千问的正确格式
@@ -391,6 +400,12 @@ public class AiService {
      */
     public String generateTravelPlanWithCustomKey(String apiKey, String userMessage, String planContext) {
         try {
+            // 如果启用桩程序模式，返回模拟数据
+            if (mockMode) {
+                log.info("使用桩程序模式生成旅游计划（自定义API Key）");
+                return generateMockTravelPlan(userMessage, planContext);
+            }
+            
             log.info("使用自定义API Key生成旅游计划");
             
             // 构建请求体 - 使用通义千问的正确格式
@@ -499,6 +514,158 @@ public class AiService {
         prompt.append("请用中文回答，建议要具体、实用、可执行。");
         
         return prompt.toString();
+    }
+    
+    /**
+     * 生成模拟旅游计划（桩程序）
+     * 
+     * @param userMessage 用户消息
+     * @param planContext 计划上下文
+     * @return 模拟的旅游计划
+     */
+    private String generateMockTravelPlan(String userMessage, String planContext) {
+        try {
+            // 模拟网络延迟
+            Thread.sleep(2000);
+            
+            StringBuilder mockResponse = new StringBuilder();
+            mockResponse.append("🎯 **智能旅游计划生成**\n\n");
+            
+            // 根据用户消息生成不同的模拟回复
+            if (userMessage.contains("北京") || userMessage.contains("beijing")) {
+                mockResponse.append("## 🏛️ 北京3日游计划\n\n");
+                mockResponse.append("### 📅 第一天：故宫与天安门\n");
+                mockResponse.append("- **上午**：天安门广场 → 故宫博物院（3-4小时）\n");
+                mockResponse.append("- **下午**：景山公园 → 北海公园\n");
+                mockResponse.append("- **晚上**：王府井步行街\n\n");
+                
+                mockResponse.append("### 📅 第二天：长城与颐和园\n");
+                mockResponse.append("- **上午**：八达岭长城（4-5小时）\n");
+                mockResponse.append("- **下午**：颐和园（2-3小时）\n");
+                mockResponse.append("- **晚上**：三里屯或后海\n\n");
+                
+                mockResponse.append("### 📅 第三天：天坛与胡同游\n");
+                mockResponse.append("- **上午**：天坛公园（2小时）\n");
+                mockResponse.append("- **下午**：南锣鼓巷 → 什刹海\n");
+                mockResponse.append("- **晚上**：前门大街\n\n");
+                
+                mockResponse.append("### 🏨 住宿建议\n");
+                mockResponse.append("- **经济型**：如家、汉庭（200-300元/晚）\n");
+                mockResponse.append("- **舒适型**：全季、桔子酒店（400-600元/晚）\n");
+                mockResponse.append("- **豪华型**：北京饭店、王府井希尔顿（800-1500元/晚）\n\n");
+                
+                mockResponse.append("### 🍜 美食推荐\n");
+                mockResponse.append("- **烤鸭**：全聚德、便宜坊\n");
+                mockResponse.append("- **涮羊肉**：东来顺、聚宝源\n");
+                mockResponse.append("- **炸酱面**：海碗居、老北京炸酱面\n");
+                mockResponse.append("- **豆汁**：护国寺小吃\n\n");
+                
+                mockResponse.append("### 💰 预算估算\n");
+                mockResponse.append("- **交通**：地铁日票20元/人，出租车约200元/天\n");
+                mockResponse.append("- **门票**：故宫60元，长城40元，颐和园30元\n");
+                mockResponse.append("- **餐饮**：150-300元/人/天\n");
+                mockResponse.append("- **住宿**：200-1500元/晚\n");
+                mockResponse.append("- **总计**：约2000-5000元/人（3天）\n\n");
+                
+            } else if (userMessage.contains("上海") || userMessage.contains("shanghai")) {
+                mockResponse.append("## 🌆 上海3日游计划\n\n");
+                mockResponse.append("### 📅 第一天：外滩与南京路\n");
+                mockResponse.append("- **上午**：外滩观景台 → 黄浦江游船\n");
+                mockResponse.append("- **下午**：南京路步行街 → 人民广场\n");
+                mockResponse.append("- **晚上**：豫园 → 城隍庙\n\n");
+                
+                mockResponse.append("### 📅 第二天：迪士尼乐园\n");
+                mockResponse.append("- **全天**：上海迪士尼乐园\n");
+                mockResponse.append("- **推荐项目**：飞跃地平线、创极速光轮、加勒比海盗\n");
+                mockResponse.append("- **晚上**：迪士尼小镇\n\n");
+                
+                mockResponse.append("### 📅 第三天：新天地与田子坊\n");
+                mockResponse.append("- **上午**：新天地（石库门建筑）\n");
+                mockResponse.append("- **下午**：田子坊（文艺小资）\n");
+                mockResponse.append("- **晚上**：陆家嘴夜景\n\n");
+                
+                mockResponse.append("### 🏨 住宿建议\n");
+                mockResponse.append("- **经济型**：如家、汉庭（250-350元/晚）\n");
+                mockResponse.append("- **舒适型**：全季、桔子酒店（500-800元/晚）\n");
+                mockResponse.append("- **豪华型**：外滩茂悦、浦东香格里拉（1000-2000元/晚）\n\n");
+                
+                mockResponse.append("### 🍜 美食推荐\n");
+                mockResponse.append("- **小笼包**：南翔小笼、鼎泰丰\n");
+                mockResponse.append("- **生煎包**：大壶春、小杨生煎\n");
+                mockResponse.append("- **本帮菜**：老正兴、德兴馆\n");
+                mockResponse.append("- **海派西餐**：红房子西菜馆\n\n");
+                
+            } else if (userMessage.contains("杭州") || userMessage.contains("hangzhou")) {
+                mockResponse.append("## 🏞️ 杭州2日游计划\n\n");
+                mockResponse.append("### 📅 第一天：西湖经典游\n");
+                mockResponse.append("- **上午**：断桥残雪 → 白堤 → 苏堤\n");
+                mockResponse.append("- **下午**：三潭印月 → 雷峰塔\n");
+                mockResponse.append("- **晚上**：河坊街 → 南宋御街\n\n");
+                
+                mockResponse.append("### 📅 第二天：灵隐寺与龙井村\n");
+                mockResponse.append("- **上午**：灵隐寺 → 飞来峰\n");
+                mockResponse.append("- **下午**：龙井村 → 九溪十八涧\n");
+                mockResponse.append("- **晚上**：西湖音乐喷泉\n\n");
+                
+                mockResponse.append("### 🏨 住宿建议\n");
+                mockResponse.append("- **西湖边**：杭州西湖国宾馆、西子宾馆\n");
+                mockResponse.append("- **市区**：如家、汉庭（200-400元/晚）\n");
+                mockResponse.append("- **民宿**：西湖边特色民宿（300-800元/晚）\n\n");
+                
+                mockResponse.append("### 🍜 美食推荐\n");
+                mockResponse.append("- **杭帮菜**：楼外楼、知味观\n");
+                mockResponse.append("- **西湖醋鱼**：楼外楼、天外天\n");
+                mockResponse.append("- **龙井虾仁**：知味观、奎元馆\n");
+                mockResponse.append("- **片儿川**：奎元馆、知味观\n\n");
+                
+            } else {
+                // 通用旅游计划
+                mockResponse.append("## 🌍 个性化旅游计划\n\n");
+                mockResponse.append("### 📅 行程安排\n");
+                mockResponse.append("- **第1天**：抵达目的地 → 酒店入住 → 市区观光\n");
+                mockResponse.append("- **第2天**：主要景点游览 → 当地美食体验\n");
+                mockResponse.append("- **第3天**：深度游 → 购物 → 返程\n\n");
+                
+                mockResponse.append("### 🏨 住宿建议\n");
+                mockResponse.append("- **经济型**：连锁酒店（200-400元/晚）\n");
+                mockResponse.append("- **舒适型**：精品酒店（500-800元/晚）\n");
+                mockResponse.append("- **豪华型**：五星级酒店（1000-2000元/晚）\n\n");
+                
+                mockResponse.append("### 🍜 美食推荐\n");
+                mockResponse.append("- **当地特色菜**：体验地道风味\n");
+                mockResponse.append("- **网红餐厅**：打卡热门美食\n");
+                mockResponse.append("- **街头小吃**：感受市井文化\n\n");
+            }
+            
+            mockResponse.append("### 🚗 交通建议\n");
+            mockResponse.append("- **市内交通**：地铁、公交、出租车\n");
+            mockResponse.append("- **城际交通**：高铁、飞机、大巴\n");
+            mockResponse.append("- **租车服务**：适合自由行\n\n");
+            
+            mockResponse.append("### ⚠️ 注意事项\n");
+            mockResponse.append("- **天气**：关注天气预报，准备合适衣物\n");
+            mockResponse.append("- **门票**：提前预订热门景点门票\n");
+            mockResponse.append("- **安全**：保管好贵重物品，注意人身安全\n");
+            mockResponse.append("- **文化**：尊重当地文化习俗\n\n");
+            
+            mockResponse.append("### 💡 贴心提示\n");
+            mockResponse.append("- 建议下载当地地图APP\n");
+            mockResponse.append("- 准备充电宝和移动电源\n");
+            mockResponse.append("- 学习基本当地语言\n");
+            mockResponse.append("- 购买旅游保险\n\n");
+            
+            mockResponse.append("🎉 **祝您旅途愉快！如有其他需求，请随时告诉我！**");
+            
+            return mockResponse.toString();
+            
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("桩程序模拟延迟被中断: {}", e.getMessage());
+            return "抱歉，生成旅游计划时发生错误，请稍后再试。";
+        } catch (Exception e) {
+            log.error("桩程序生成失败: {}", e.getMessage());
+            return "抱歉，生成旅游计划时发生错误，请稍后再试。";
+        }
     }
 }
 
