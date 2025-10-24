@@ -38,10 +38,6 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      transformRequest: [(data) => {
-        console.log('发送的数据:', data);
-        return JSON.stringify(data);
-      }],
     });
 
     // 请求拦截器 - 添加认证token
@@ -306,8 +302,15 @@ class ApiService {
   }
 
   async getBudgetAnalysis(planId: number): Promise<BudgetAnalysis> {
-    const response = await this.api.get(`/expenses/plans/${planId}/budget-analysis`);
-    return response.data.data;
+    try {
+      console.log('Calling budget analysis API for planId:', planId);
+      const response = await this.api.get(`/expenses/plans/${planId}/budget-analysis`);
+      console.log('Budget analysis API response:', response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error('Budget analysis API error:', error);
+      throw error;
+    }
   }
 
   async getBudgetOptimization(planId: number, targetSavings: number): Promise<BudgetOptimization> {

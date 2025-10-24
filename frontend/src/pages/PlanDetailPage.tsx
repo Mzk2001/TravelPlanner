@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Layout, 
   Card, 
   Typography, 
   Row, 
@@ -32,12 +31,10 @@ import {
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
-import Header from '../components/Header';
 import { TravelPlan, UpdatePlanRequest, UpdateStatusRequest } from '../types';
 import dayjs from 'dayjs';
 
-const { Content } = Layout;
-const { Title, Paragraph } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 const PlanDetailPage: React.FC = () => {
@@ -220,79 +217,69 @@ const PlanDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header />
-        <Content style={{ padding: '24px', textAlign: 'center' }}>
-          <div>加载中...</div>
-        </Content>
-      </Layout>
+      <div style={{ padding: '24px', textAlign: 'center', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div>加载中...</div>
+      </div>
     );
   }
 
   if (!plan) {
     return (
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header />
-        <Content style={{ padding: '24px', textAlign: 'center' }}>
-          <div>计划不存在</div>
-        </Content>
-      </Layout>
+      <div style={{ padding: '24px', textAlign: 'center', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div>计划不存在</div>
+      </div>
     );
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header />
-      <Content style={{ padding: '24px' }}>
-        {/* 页面头部 */}
-        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              {plan.planName}
-            </Title>
-            <Space style={{ marginTop: 8 }}>
-              <span style={{ color: '#999' }}>
-                创建于 {dayjs(plan.createdAt).format('YYYY-MM-DD HH:mm')}
-              </span>
-            </Space>
-          </Col>
-          <Col>
-            <Space>
-              <Button 
-                type="primary" 
-                icon={<MessageOutlined />}
-                onClick={() => navigate(`/chat?planId=${plan.id}`)}
-              >
-                与AI讨论
-              </Button>
-              <Button 
-                icon={<CalculatorOutlined />}
-                onClick={() => navigate(`/plans/${plan.id}/expenses`)}
-              >
-                费用管理
-              </Button>
-              <Button 
-                icon={<BarChartOutlined />}
-                onClick={() => navigate(`/plans/${plan.id}/budget`)}
-              >
-                预算分析
-              </Button>
-              <Button 
-                icon={<EditOutlined />}
-                onClick={handleEdit}
-              >
-                编辑
-              </Button>
-              <Button 
-                danger 
-                icon={<DeleteOutlined />}
-                onClick={handleDelete}
-              >
-                删除
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+    <div style={{ padding: '24px' }}>
+        {/* 页面标题和操作栏 */}
+        <div style={{ marginBottom: 24 }}>
+          <Title level={2} style={{ margin: 0, marginBottom: 8 }}>
+            {plan.planName}
+          </Title>
+          <Text type="secondary" style={{ marginBottom: 16, display: 'block' }}>
+            创建于 {dayjs(plan.createdAt).format('YYYY-MM-DD HH:mm')}
+          </Text>
+          <Row justify="end">
+            <Col>
+              <Space>
+                <Button 
+                  type="primary" 
+                  icon={<MessageOutlined />}
+                  onClick={() => navigate(`/chat?planId=${plan.id}`)}
+                >
+                  与AI讨论
+                </Button>
+                <Button 
+                  icon={<CalculatorOutlined />}
+                  onClick={() => navigate(`/plans/${plan.id}/expenses`)}
+                >
+                  费用管理
+                </Button>
+                <Button 
+                  icon={<BarChartOutlined />}
+                  onClick={() => navigate(`/plans/${plan.id}/budget`)}
+                >
+                  预算分析
+                </Button>
+                <Button 
+                  icon={<EditOutlined />}
+                  onClick={handleEdit}
+                >
+                  编辑
+                </Button>
+                <Button 
+                  danger 
+                  icon={<DeleteOutlined />}
+                  onClick={handleDelete}
+                >
+                  删除
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </div>
 
         <Row gutter={[24, 24]}>
           {/* 基本信息 */}
@@ -618,8 +605,7 @@ const PlanDetailPage: React.FC = () => {
           </Form>
         </Modal>
 
-      </Content>
-    </Layout>
+    </div>
   );
 };
 

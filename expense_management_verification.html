@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>费用管理功能验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            color: #1890ff;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .status.success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #389e0d;
+        }
+        .status.error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #cf1322;
+        }
+        .status.info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #0958d9;
+        }
+        .btn {
+            background-color: #1890ff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #40a9ff;
+        }
+        .btn-success {
+            background-color: #52c41a;
+        }
+        .btn-success:hover {
+            background-color: #73d13d;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .feature-list li:before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+        .code-block {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 费用管理功能验证</h1>
+            <p>验证ExpenseManagementPage的TypeScript修复和功能完整性</p>
+        </div>
+
+        <!-- 修复状态 -->
+        <div class="status success">
+            <h3>✅ TypeScript编译错误已修复</h3>
+            <p>修复了ExpenseManagementPage.tsx中第254行的参数类型错误：</p>
+            <div class="code-block">
+render: (_: any, record: Expense) => (
+            </div>
+            <p>现在编译应该没有错误了。</p>
+        </div>
+
+        <!-- 功能验证 -->
+        <div class="status info">
+            <h3>🔍 功能验证</h3>
+            <p>费用管理页面现在应该可以正常访问和使用了。</p>
+            
+            <a href="http://localhost:3000/login" class="btn" target="_blank">登录系统</a>
+            <a href="http://localhost:3000/plans" class="btn" target="_blank">查看计划</a>
+            <a href="http://localhost:3000/plans/1/expenses" class="btn btn-success" target="_blank">费用管理页面</a>
+        </div>
+
+        <!-- 已实现功能 -->
+        <div class="container">
+            <h3>✨ 费用管理功能特性</h3>
+            <ul class="feature-list">
+                <li><strong>费用记录管理</strong>：完整的CRUD操作（创建、读取、更新、删除）</li>
+                <li><strong>多维度分类</strong>：8种费用类别（交通、住宿、餐饮、活动、购物、医疗、娱乐、其他）</li>
+                <li><strong>支付方式</strong>：5种支付方式（现金、信用卡、支付宝、微信、银行转账）</li>
+                <li><strong>详细信息</strong>：费用描述、地点、日期、备注、收据URL等</li>
+                <li><strong>预算分析</strong>：实时预算使用率计算和风险预警</li>
+                <li><strong>数据统计</strong>：按类别、日期等维度统计支出</li>
+                <li><strong>AI智能分析</strong>：基于支出模式的智能建议</li>
+                <li><strong>响应式设计</strong>：支持移动端和桌面端</li>
+                <li><strong>Ant Design UI</strong>：统一的UI组件和设计风格</li>
+            </ul>
+        </div>
+
+        <!-- 技术实现 -->
+        <div class="container">
+            <h3>🔧 技术实现细节</h3>
+            <h4>前端技术栈：</h4>
+            <ul>
+                <li><strong>React 18</strong>：现代化的React框架</li>
+                <li><strong>TypeScript</strong>：类型安全的JavaScript</li>
+                <li><strong>Ant Design</strong>：企业级UI组件库</li>
+                <li><strong>Axios</strong>：HTTP客户端</li>
+                <li><strong>React Router</strong>：路由管理</li>
+            </ul>
+
+            <h4>后端技术栈：</h4>
+            <ul>
+                <li><strong>Spring Boot 2.7</strong>：Java微服务框架</li>
+                <li><strong>Spring Security</strong>：安全认证</li>
+                <li><strong>JPA/Hibernate</strong>：数据持久化</li>
+                <li><strong>MySQL</strong>：关系型数据库</li>
+                <li><strong>JWT</strong>：无状态认证</li>
+            </ul>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="container">
+            <h3>📖 使用说明</h3>
+            <ol>
+                <li><strong>启动服务</strong>：
+                    <div class="code-block">
+# 启动前端服务
+cd frontend && npm start
+
+# 启动后端服务
+cd backend && mvn spring-boot:run
+                    </div>
+                </li>
+                <li><strong>访问系统</strong>：打开浏览器访问 <code>http://localhost:3000</code></li>
+                <li><strong>登录账号</strong>：使用现有账号或注册新账号</li>
+                <li><strong>创建计划</strong>：在旅行计划页面创建新的旅行计划</li>
+                <li><strong>设置预算</strong>：为计划设置预算金额</li>
+                <li><strong>记录费用</strong>：在费用管理页面添加各种支出记录</li>
+                <li><strong>查看分析</strong>：使用预算分析功能获取AI建议</li>
+            </ol>
+        </div>
+
+        <!-- 测试步骤 -->
+        <div class="container">
+            <h3>🧪 测试步骤</h3>
+            <ol>
+                <li>确保前端服务运行在 <code>http://localhost:3000</code></li>
+                <li>确保后端服务运行在 <code>http://localhost:8080</code></li>
+                <li>访问费用管理页面：<code>http://localhost:3000/plans/1/expenses</code></li>
+                <li>测试添加费用记录功能</li>
+                <li>测试编辑费用记录功能</li>
+                <li>测试删除费用记录功能</li>
+                <li>测试预算分析功能</li>
+                <li>验证数据统计功能</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 检查服务状态
+        async function checkServices() {
+            const results = [];
+            
+            // 检查前端服务
+            try {
+                const frontendResponse = await fetch('http://localhost:3000');
+                results.push('✅ 前端服务 (3000) - 运行正常');
+            } catch (error) {
+                results.push('❌ 前端服务 (3000) - 无法访问');
+            }
+            
+            // 检查后端服务
+            try {
+                const backendResponse = await fetch('http://localhost:8080/api/expenses/plans/1?page=0&size=10');
+                results.push('✅ 后端服务 (8080) - 运行正常');
+            } catch (error) {
+                results.push('❌ 后端服务 (8080) - 无法访问');
+            }
+            
+            console.log('服务状态检查结果：');
+            results.forEach(result => console.log(result));
+        }
+
+        // 页面加载时检查服务状态
+        window.onload = function() {
+            checkServices();
+        };
+    </script>
+</body>
+</html>
+
+

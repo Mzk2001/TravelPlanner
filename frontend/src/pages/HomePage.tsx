@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Card, Row, Col, Typography, Button, Space, Statistic } from 'antd';
+import { Card, Row, Col, Typography, Button, Space, Statistic } from 'antd';
 import { 
   PlusOutlined, 
   MessageOutlined, 
@@ -10,9 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
 
-const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
 const HomePage: React.FC = () => {
@@ -47,9 +45,7 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header />
-      <Content style={{ padding: '0 24px' }}>
+    <div style={{ padding: '0 24px', minHeight: '100vh' }}>
         {/* Hero Section */}
         <div style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -213,8 +209,7 @@ const HomePage: React.FC = () => {
             </Space>
           </Space>
         </div>
-      </Content>
-    </Layout>
+    </div>
   );
 };
 

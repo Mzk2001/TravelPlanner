@@ -117,6 +117,71 @@ export const conversationAPI = {
     api.post('/conversations/save-as-plan-with-fields', planData),
 };
 
-export default api;
+// 费用管理相关API
+export const expenseAPI = {
+  createExpense: (expenseData) => 
+    api.post('/expenses', expenseData),
+  
+  getExpenses: (planId, page = 0, size = 10) => 
+    api.get(`/expenses/plans/${planId}`, { params: { page, size } }),
+  
+  getExpense: (expenseId) => 
+    api.get(`/expenses/${expenseId}`),
+  
+  updateExpense: (expenseId, expenseData) => 
+    api.put(`/expenses/${expenseId}`, expenseData),
+  
+  deleteExpense: (expenseId) => 
+    api.delete(`/expenses/${expenseId}`),
+  
+  getExpenseSummary: (planId) => 
+    api.get(`/expenses/plans/${planId}/budget-analysis`),
+  
+  getBudgetAnalysis: (planId) => 
+    api.get(`/expenses/plans/${planId}/budget-analysis`),
+};
+
+// 默认导出包含所有API方法的对象
+const apiService = {
+  // 认证相关
+  login: authAPI.login,
+  validateToken: authAPI.validateToken,
+  
+  // 用户相关
+  register: userAPI.register,
+  getUser: userAPI.getUser,
+  updateUser: userAPI.updateUser,
+  
+  // 旅游计划相关
+  createPlan: planAPI.createPlan,
+  getPlan: planAPI.getPlan,
+  getUserPlans: planAPI.getUserPlans,
+  updatePlan: planAPI.updatePlan,
+  deletePlan: planAPI.deletePlan,
+  
+  // 对话相关
+  sendMessage: conversationAPI.sendMessage,
+  sendVoiceMessage: conversationAPI.sendVoiceMessage,
+  getConversations: conversationAPI.getConversations,
+  searchPlaces: conversationAPI.searchPlaces,
+  getPlaceDetail: conversationAPI.getPlaceDetail,
+  saveAsPlan: conversationAPI.saveAsPlan,
+  saveAsPlanWithFields: conversationAPI.saveAsPlanWithFields,
+  
+  // 费用管理相关
+  createExpense: expenseAPI.createExpense,
+  getExpenses: expenseAPI.getExpenses,
+  getExpense: expenseAPI.getExpense,
+  updateExpense: expenseAPI.updateExpense,
+  deleteExpense: expenseAPI.deleteExpense,
+  getExpenseSummary: expenseAPI.getExpenseSummary,
+  getBudgetAnalysis: expenseAPI.getBudgetAnalysis,
+  
+  // 预算优化相关
+  getBudgetOptimization: (planId, targetSavings) => 
+    api.post(`/expenses/plans/${planId}/budget-optimization?targetSavings=${targetSavings}`),
+};
+
+export default apiService;
 
 

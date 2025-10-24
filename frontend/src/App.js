@@ -10,6 +10,8 @@ import PlanDetailPage from './pages/PlanDetailPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import ExpenseManagementPage from './pages/ExpenseManagementPage';
+import BudgetAnalysisPage from './pages/BudgetAnalysisPage';
 import Header from './components/Header';
 import './App.css';
 
@@ -93,6 +95,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <PlanDetailPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/plans/:planId/expenses" 
+                  element={
+                    <ProtectedRoute>
+                      <ExpenseManagementPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/plans/:planId/budget" 
+                  element={
+                    <ProtectedRoute>
+                      <BudgetAnalysisPage />
                     </ProtectedRoute>
                   } 
                 />

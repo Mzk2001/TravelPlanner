@@ -39,7 +39,7 @@ public class TravelPlanController {
     @PostMapping
     public ResponseEntity<?> createPlan(@Valid @RequestBody CreatePlanRequest request) {
         try {
-            log.info("创建旅游计划: userId={}, planName={}", request.getUserId(), request.getPlanName());
+            log.info("创建旅游计划: userId={}, planName={}, budget={}", request.getUserId(), request.getPlanName(), request.getBudget());
             
             TravelPlan plan = travelPlanService.createPlan(
                 request.getUserId(),
@@ -53,6 +53,7 @@ public class TravelPlanController {
                 request.getSpecialRequirements()
             );
             
+            log.info("旅游计划创建成功: planId={}, budget={}", plan.getId(), plan.getBudget());
             return ResponseEntity.ok(convertToResponse(plan));
             
         } catch (Exception e) {

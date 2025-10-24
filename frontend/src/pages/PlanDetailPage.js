@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Spin, message, Tag, Button } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Card, Spin, message, Tag, Button, Space } from 'antd';
+import { ArrowLeftOutlined, DollarOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { planAPI } from '../services/api';
 import dayjs from 'dayjs';
@@ -51,12 +51,21 @@ const PlanDetailPage = () => {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <Button 
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/dashboard')}
-        >
-          返回
-        </Button>
+        <Space>
+          <Button 
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/dashboard')}
+          >
+            返回
+          </Button>
+          <Button 
+            type="primary"
+            icon={<DollarOutlined />}
+            onClick={() => navigate(`/plans/${id}/expenses`)}
+          >
+            费用管理
+          </Button>
+        </Space>
       </div>
 
       <Card title={plan.planName}>

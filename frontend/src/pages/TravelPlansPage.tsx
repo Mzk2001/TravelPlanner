@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Layout, 
   Card, 
   Button, 
   Table, 
@@ -31,11 +30,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
-import Header from '../components/Header';
 import { TravelPlan, CreatePlanRequest, UpdatePlanRequest } from '../types';
 import dayjs from 'dayjs';
 
-const { Content } = Layout;
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
@@ -222,9 +219,7 @@ const TravelPlansPage: React.FC = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header />
-      <Content style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', minHeight: '100vh' }}>
         <div style={{ marginBottom: 24 }}>
           <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
             <Col>
@@ -382,8 +377,7 @@ const TravelPlansPage: React.FC = () => {
             </Form.Item>
           </Form>
         </Modal>
-      </Content>
-    </Layout>
+    </div>
   );
 };
 

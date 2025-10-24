@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>费用管理功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            color: #1890ff;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+        }
+        .test-section h3 {
+            color: #1890ff;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: #1890ff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background-color: #40a9ff;
+        }
+        .btn-success {
+            background-color: #52c41a;
+        }
+        .btn-success:hover {
+            background-color: #73d13d;
+        }
+        .btn-danger {
+            background-color: #ff4d4f;
+        }
+        .btn-danger:hover {
+            background-color: #ff7875;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .result.success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #389e0d;
+        }
+        .result.error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #cf1322;
+        }
+        .result.info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #0958d9;
+        }
+        .expense-list {
+            margin-top: 20px;
+        }
+        .expense-item {
+            padding: 10px;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #fafafa;
+        }
+        .expense-item h4 {
+            margin: 0 0 5px 0;
+            color: #1890ff;
+        }
+        .expense-details {
+            font-size: 14px;
+            color: #666;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            padding: 15px;
+            background-color: #f0f9ff;
+            border: 1px solid #91d5ff;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 费用预算与管理功能测试</h1>
+            <p>测试AI驱动的旅行费用管理和预算分析功能</p>
+        </div>
+
+        <!-- 测试计划选择 -->
+        <div class="test-section">
+            <h3>📋 选择测试计划</h3>
+            <div class="form-group">
+                <label for="planId">计划ID:</label>
+                <input type="number" id="planId" value="1" placeholder="输入计划ID">
+            </div>
+            <button class="btn" onclick="loadPlanInfo()">加载计划信息</button>
+            <div id="planInfo" class="result info" style="display: none;"></div>
+        </div>
+
+        <!-- 费用记录管理 -->
+        <div class="test-section">
+            <h3>💰 费用记录管理</h3>
+            
+            <div class="form-group">
+                <label for="expenseCategory">费用类别:</label>
+                <select id="expenseCategory">
+                    <option value="TRANSPORTATION">交通</option>
+                    <option value="ACCOMMODATION">住宿</option>
+                    <option value="MEAL">餐饮</option>
+                    <option value="ACTIVITY">活动</option>
+                    <option value="SHOPPING">购物</option>
+                    <option value="HEALTH">医疗</option>
+                    <option value="ENTERTAINMENT">娱乐</option>
+                    <option value="OTHER">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="expenseAmount">金额:</label>
+                <input type="number" id="expenseAmount" step="0.01" placeholder="输入金额">
+            </div>
+
+            <div class="form-group">
+                <label for="expenseDescription">描述:</label>
+                <input type="text" id="expenseDescription" placeholder="费用描述">
+            </div>
+
+            <div class="form-group">
+                <label for="expenseLocation">地点:</label>
+                <input type="text" id="expenseLocation" placeholder="消费地点">
+            </div>
+
+            <div class="form-group">
+                <label for="expenseDate">日期:</label>
+                <input type="date" id="expenseDate">
+            </div>
+
+            <div class="form-group">
+                <label for="paymentMethod">支付方式:</label>
+                <select id="paymentMethod">
+                    <option value="CASH">现金</option>
+                    <option value="CREDIT_CARD">信用卡</option>
+                    <option value="ALIPAY">支付宝</option>
+                    <option value="WECHAT">微信支付</option>
+                    <option value="BANK_TRANSFER">银行转账</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="expenseNotes">备注:</label>
+                <textarea id="expenseNotes" rows="3" placeholder="备注信息"></textarea>
+            </div>
+
+            <button class="btn btn-success" onclick="createExpense()">添加费用记录</button>
+            <button class="btn" onclick="loadExpenses()">查看费用列表</button>
+            <button class="btn" onclick="getExpenseStats()">获取费用统计</button>
+            
+            <div id="expenseResult" class="result" style="display: none;"></div>
+            <div id="expenseList" class="expense-list"></div>
+        </div>
+
+        <!-- AI预算分析 -->
+        <div class="test-section">
+            <h3>🤖 AI预算分析</h3>
+            <p>基于当前预算和支出情况，AI将提供智能分析建议</p>
+            
+            <button class="btn" onclick="getBudgetAnalysis()">获取AI预算分析</button>
+            <button class="btn" onclick="getBudgetOptimization()">获取AI优化建议</button>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="targetSavings">目标节省金额:</label>
+                <input type="number" id="targetSavings" step="0.01" placeholder="输入目标节省金额">
+            </div>
+            
+            <div id="budgetResult" class="result" style="display: none;"></div>
+            <div id="budgetStats" class="stats-grid"></div>
+        </div>
+
+        <!-- 功能说明 -->
+        <div class="test-section">
+            <h3>📖 功能说明</h3>
+            <ul>
+                <li><strong>费用记录管理</strong>：支持添加、查看、编辑、删除费用记录</li>
+                <li><strong>多维度统计</strong>：按类别、日期、支付方式等维度统计</li>
+                <li><strong>AI预算分析</strong>：基于实际支出情况提供智能分析</li>
+                <li><strong>AI优化建议</strong>：根据目标节省金额提供具体优化方案</li>
+                <li><strong>实时预算监控</strong>：预算使用率、剩余预算等实时计算</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        // 设置默认日期为今天
+        document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(API_BASE + url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API调用失败:', error);
+                throw error;
+            }
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        async function loadPlanInfo() {
+            const planId = document.getElementById('planId').value;
+            if (!planId) {
+                showResult('planInfo', '请输入计划ID', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiCall(`/plans/${planId}`);
+                const plan = response.data;
+                const info = `计划名称: ${plan.planName}\n目的地: ${plan.destination}\n预算: ¥${plan.budget}\n出发日期: ${plan.startDate}\n返回日期: ${plan.endDate}`;
+                showResult('planInfo', info, 'success');
+            } catch (error) {
+                showResult('planInfo', `加载计划信息失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function createExpense() {
+            const planId = document.getElementById('planId').value;
+            if (!planId) {
+                showResult('expenseResult', '请先选择计划', 'error');
+                return;
+            }
+
+            const expenseData = {
+                planId: parseInt(planId),
+                userId: 1, // 测试用户ID
+                category: document.getElementById('expenseCategory').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                currency: 'CNY',
+                description: document.getElementById('expenseDescription').value,
+                location: document.getElementById('expenseLocation').value,
+                expenseDate: document.getElementById('expenseDate').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                tags: '',
+                isReimbursable: false,
+                notes: document.getElementById('expenseNotes').value
+            };
+
+            try {
+                const response = await apiCall('/expenses', {
+                    method: 'POST',
+                    body: JSON.stringify(expenseData)
+                });
+                
+                showResult('expenseResult', `费用记录创建成功！\nID: ${response.data.id}\n金额: ¥${response.data.amount}`, 'success');
+                
+                // 清空表单
+                document.getElementById('expenseAmount').value = '';
+                document.getElementById('expenseDescription').value = '';
+                document.getElementById('expenseLocation').value = '';
+                document.getElementById('expenseNotes').value = '';
+                
+                // 自动刷新费用列表
+                setTimeout(loadExpenses, 1000);
+            } catch (error) {
+                showResult('expenseResult', `创建费用记录失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadExpenses() {
+            const planId = document.getElementById('planId').value;
+            if (!planId) {
+                showResult('expenseResult', '请先选择计划', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiCall(`/expenses/plans/${planId}?page=0&size=20`);
+                const expenses = response.data.expenses;
+                
+                let html = '<h4>费用记录列表</h4>';
+                if (expenses.length === 0) {
+                    html += '<p>暂无费用记录</p>';
+                } else {
+                    expenses.forEach(expense => {
+                        html += `
+                            <div class="expense-item">
+                                <h4>${expense.category} - ¥${expense.amount}</h4>
+                                <div class="expense-details">
+                                    <strong>描述:</strong> ${expense.description || '无'}<br>
+                                    <strong>地点:</strong> ${expense.location || '无'}<br>
+                                    <strong>日期:</strong> ${expense.expenseDate}<br>
+                                    <strong>支付方式:</strong> ${expense.paymentMethod || '无'}<br>
+                                    <strong>备注:</strong> ${expense.notes || '无'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('expenseList').innerHTML = html;
+                showResult('expenseResult', `加载了 ${expenses.length} 条费用记录`, 'success');
+            } catch (error) {
+                showResult('expenseResult', `加载费用记录失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function getExpenseStats() {
+            const planId = document.getElementById('planId').value;
+            if (!planId) {
+                showResult('expenseResult', '请先选择计划', 'error');
+                return;
+            }
+
+            try {
+                // 获取总费用
+                const totalResponse = await apiCall(`/expenses/plans/${planId}/total`);
+                const totalAmount = totalResponse.data.totalAmount;
+
+                // 获取类别统计
+                const categoryResponse = await apiCall(`/expenses/plans/${planId}/category-stats`);
+                const categoryStats = categoryResponse.data.categoryStats;
+
+                let statsHtml = `
+                    <div class="stat-card">
+                        <div class="stat-value">¥${totalAmount}</div>
+                        <div class="stat-label">总支出</div>
+                    </div>
+                `;
+
+                for (const [category, amount] of Object.entries(categoryStats)) {
+                    statsHtml += `
+                        <div class="stat-card">
+                            <div class="stat-value">¥${amount}</div>
+                            <div class="stat-label">${category}</div>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('budgetStats').innerHTML = statsHtml;
+                showResult('expenseResult', `费用统计加载成功`, 'success');
+            } catch (error) {
+                showResult('expenseResult', `获取费用统计失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function getBudgetAnalysis() {
+            const planId = document.getElementById('planId').value;
+            if (!planId) {
+                showResult('budgetResult', '请先选择计划', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiCall(`/expenses/plans/${planId}/budget-analysis`);
+                const analysis = response.data;
+                
+                let analysisText = `📊 预算分析报告\n\n`;
+                analysisText += `总预算: ¥${analysis.totalBudget}\n`;
+                analysisText += `已支出: ¥${analysis.totalExpense}\n`;
+                analysisText += `剩余预算: ¥${analysis.remainingBudget}\n`;
+                analysisText += `预算使用率: ${analysis.budgetUtilization}%\n\n`;
+                
+                if (analysis.basicSuggestions && analysis.basicSuggestions.length > 0) {
+                    analysisText += `💡 基础建议:\n`;
+                    analysis.basicSuggestions.forEach(suggestion => {
+                        analysisText += `• ${suggestion}\n`;
+                    });
+                    analysisText += `\n`;
+                }
+                
+                if (analysis.aiAnalysis) {
+                    analysisText += `🤖 AI智能分析:\n${analysis.aiAnalysis}`;
+                }
+                
+                showResult('budgetResult', analysisText, 'success');
+            } catch (error) {
+                showResult('budgetResult', `获取预算分析失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function getBudgetOptimization() {
+            const planId = document.getElementById('planId').value;
+            const targetSavings = document.getElementById('targetSavings').value;
+            
+            if (!planId) {
+                showResult('budgetResult', '请先选择计划', 'error');
+                return;
+            }
+            
+            if (!targetSavings || targetSavings <= 0) {
+                showResult('budgetResult', '请输入有效的目标节省金额', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiCall(`/expenses/plans/${planId}/budget-optimization?targetSavings=${targetSavings}`, {
+                    method: 'POST'
+                });
+                
+                const optimization = response.data;
+                
+                let optimizationText = `🎯 预算优化建议\n\n`;
+                optimizationText += `当前预算: ¥${optimization.currentBudget}\n`;
+                optimizationText += `目标节省: ¥${optimization.targetSavings}\n`;
+                optimizationText += `优化后预算: ¥${optimization.optimizedBudget}\n\n`;
+                
+                if (optimization.aiOptimization) {
+                    optimizationText += `🤖 AI优化建议:\n${optimization.aiOptimization}`;
+                }
+                
+                showResult('budgetResult', optimizationText, 'success');
+            } catch (error) {
+                showResult('budgetResult', `获取预算优化建议失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动加载计划信息
+        window.onload = function() {
+            loadPlanInfo();
+        };
+    </script>
+</body>
+</html>
+

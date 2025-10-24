@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
-  Layout, 
   Card, 
   Input, 
   Button, 
@@ -30,11 +29,9 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
-import Header from '../components/Header';
 import { Conversation, ChatRequest, ChatResponse, TravelPlan, ExtractedFields } from '../types';
 import dayjs from 'dayjs';
 
-const { Content } = Layout;
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -343,9 +340,7 @@ const ChatPage: React.FC = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header />
-      <Content style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', minHeight: '100vh' }}>
         <Row gutter={24} style={{ height: 'calc(100vh - 120px)' }}>
           {/* 左侧：计划选择 */}
           <Col xs={24} lg={6}>
@@ -645,7 +640,6 @@ const ChatPage: React.FC = () => {
             </Card>
           </Col>
         </Row>
-      </Content>
 
       {/* 编辑AI方案模态框 */}
       <Modal
@@ -687,7 +681,7 @@ const ChatPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </Layout>
+    </div>
   );
 };
 

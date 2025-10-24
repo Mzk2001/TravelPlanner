@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Layout, 
   Card, 
   Form, 
   Input, 
@@ -23,10 +22,8 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
-import Header from '../components/Header';
 import { UpdateUserRequest } from '../types';
 
-const { Content } = Layout;
 const { Title, Text } = Typography;
 
 const ProfilePage: React.FC = () => {
@@ -36,12 +33,9 @@ const ProfilePage: React.FC = () => {
 
   if (!user) {
     return (
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header />
-        <Content style={{ padding: '24px', textAlign: 'center' }}>
-          <div>请先登录</div>
-        </Content>
-      </Layout>
+      <div style={{ padding: '24px', textAlign: 'center', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div>请先登录</div>
+      </div>
     );
   }
 
@@ -68,9 +62,7 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header />
-      <Content style={{ padding: '24px' }}>
+    <div style={{ padding: '24px' }}>
         <Row gutter={[24, 24]}>
           {/* 左侧：头像和基本信息 */}
           <Col xs={24} lg={8}>
@@ -237,8 +229,7 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Col>
         </Row>
-      </Content>
-    </Layout>
+    </div>
   );
 };
 

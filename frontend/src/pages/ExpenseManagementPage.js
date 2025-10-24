@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+  Layout,
   Card,
   Typography,
   Button,
@@ -39,25 +40,26 @@ import {
   MedicineBoxOutlined,
   MoreOutlined
 } from '@ant-design/icons';
-import { Expense, CreateExpenseRequest, UpdateExpenseRequest, BudgetAnalysis } from '../types';
-import apiService from '../services/api';
+import { expenseAPI } from '../services/api';
+import Header from '../components/Header';
 import dayjs from 'dayjs';
 
+const { Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const ExpenseManagementPage: React.FC = () => {
-  const { planId } = useParams<{ planId: string }>();
+const ExpenseManagementPage = () => {
+  const { planId } = useParams();
   const navigate = useNavigate();
   
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [budgetAnalysis, setBudgetAnalysis] = useState<BudgetAnalysis | null>(null);
+  const [expenses, setExpenses] = useState([]);
+  const [budgetAnalysis, setBudgetAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   
   // 对话框状态
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [form] = Form.useForm();
 
   const expenseCategories = [
@@ -90,8 +92,9 @@ const ExpenseManagementPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getExpensesByPlan(Number(planId));
-      setExpenses(response.expenses || []);
+      const response = await expenseAPI.getExpenses(Number(planId));
+      // 后端返回的数据结构是 { data: { expenses: [...] } }
+      setExpenses(response.data?.data?.expenses || []);
     } catch (err) {
       setError('加载费用记录失败');
       console.error('Load expenses error:', err);
@@ -102,8 +105,9 @@ const ExpenseManagementPage: React.FC = () => {
 
   const loadBudgetAnalysis = async () => {
     try {
-      const analysis = await apiService.getBudgetAnalysis(Number(planId));
-      setBudgetAnalysis(analysis);
+      const response = await expenseAPI.getExpenseSummary(Number(planId));
+      // 后端返回的数据结构是 { data: { totalExpense: ..., totalBudget: ... } }
+      setBudgetAnalysis(response.data?.data);
     } catch (err) {
       console.error('Load budget analysis error:', err);
     }
@@ -112,14 +116,14 @@ const ExpenseManagementPage: React.FC = () => {
   const handleCreateExpense = async () => {
     try {
       const values = await form.validateFields();
-      const expenseData: CreateExpenseRequest = {
+      const expenseData = {
         ...values,
         planId: Number(planId),
         userId: 1, // 从认证上下文获取
         expenseDate: values.expenseDate.format('YYYY-MM-DD')
       };
       
-      await apiService.createExpense(expenseData);
+      await expenseAPI.createExpense(expenseData);
       message.success('费用记录创建成功');
       setModalVisible(false);
       form.resetFields();
@@ -136,12 +140,12 @@ const ExpenseManagementPage: React.FC = () => {
     
     try {
       const values = await form.validateFields();
-      const updateData: UpdateExpenseRequest = {
+      const updateData = {
         ...values,
         expenseDate: values.expenseDate.format('YYYY-MM-DD')
       };
       
-      await apiService.updateExpense(editingExpense.id, updateData);
+      await expenseAPI.updateExpense(editingExpense.id, updateData);
       message.success('费用记录更新成功');
       setModalVisible(false);
       setEditingExpense(null);
@@ -154,9 +158,9 @@ const ExpenseManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteExpense = async (expenseId: number) => {
+  const handleDeleteExpense = async (expenseId) => {
     try {
-      await apiService.deleteExpense(expenseId);
+      await expenseAPI.deleteExpense(expenseId);
       message.success('费用记录删除成功');
       loadExpenses();
       loadBudgetAnalysis();
@@ -166,7 +170,7 @@ const ExpenseManagementPage: React.FC = () => {
     }
   };
 
-  const handleEditExpense = (expense: Expense) => {
+  const handleEditExpense = (expense) => {
     setEditingExpense(expense);
     form.setFieldsValue({
       ...expense,
@@ -175,13 +179,13 @@ const ExpenseManagementPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category) => {
     const categoryInfo = expenseCategories.find(cat => cat.value === category);
     return categoryInfo?.icon || <MoreOutlined />;
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
+  const getCategoryColor = (category) => {
+    const colors = {
       'TRANSPORTATION': 'blue',
       'ACCOMMODATION': 'green',
       'MEAL': 'orange',
@@ -199,7 +203,7 @@ const ExpenseManagementPage: React.FC = () => {
       title: '类别',
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => (
+      render: (category) => (
         <Space>
           {getCategoryIcon(category)}
           <Tag color={getCategoryColor(category)}>
@@ -212,7 +216,7 @@ const ExpenseManagementPage: React.FC = () => {
       title: '金额',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount: number) => (
+      render: (amount) => (
         <Text strong style={{ color: '#f5222d' }}>
           ¥{amount.toFixed(2)}
         </Text>
@@ -234,13 +238,13 @@ const ExpenseManagementPage: React.FC = () => {
       title: '日期',
       dataIndex: 'expenseDate',
       key: 'expenseDate',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
+      render: (date) => dayjs(date).format('YYYY-MM-DD'),
     },
     {
       title: '支付方式',
       dataIndex: 'paymentMethod',
       key: 'paymentMethod',
-      render: (method: string) => {
+      render: (method) => {
         const methodInfo = paymentMethods.find(m => m.value === method);
         return methodInfo?.label || method;
       },
@@ -248,7 +252,7 @@ const ExpenseManagementPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Expense) => (
+      render: (_, record) => (
         <Space size="middle">
           <Button
             type="link"

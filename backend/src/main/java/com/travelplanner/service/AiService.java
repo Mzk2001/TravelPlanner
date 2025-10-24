@@ -653,7 +653,11 @@ public class AiService {
             message.put("role", "user");
             message.put("content", buildBudgetAnalysisPrompt(budgetData, expenseData));
             messages.add(message);
-            request.put("messages", messages);
+            
+            // 构建input对象（通义千问的正确格式）
+            Map<String, Object> input = new HashMap<>();
+            input.put("messages", messages);
+            request.put("input", input);
             
             // 构建parameters对象
             Map<String, Object> parameters = new HashMap<>();
@@ -664,6 +668,7 @@ public class AiService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + qwenApiKey);
+            headers.set("X-DashScope-Async", "disable"); // 确保同步调用
             
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
             
@@ -710,7 +715,11 @@ public class AiService {
             message.put("role", "user");
             message.put("content", buildBudgetOptimizationPrompt(currentBudget, targetSavings));
             messages.add(message);
-            request.put("messages", messages);
+            
+            // 构建input对象（通义千问的正确格式）
+            Map<String, Object> input = new HashMap<>();
+            input.put("messages", messages);
+            request.put("input", input);
             
             // 构建parameters对象
             Map<String, Object> parameters = new HashMap<>();
@@ -721,6 +730,7 @@ public class AiService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + qwenApiKey);
+            headers.set("X-DashScope-Async", "disable"); // 确保同步调用
             
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
             
@@ -776,9 +786,9 @@ public class AiService {
      */
     private String buildBudgetAnalysisPrompt(Map<String, Object> budgetData, Map<String, Object> expenseData) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("你是一个专业的财务分析师，专门为旅游预算提供智能分析。\n\n");
+        prompt.append("请根据以下旅游预算数据进行分析：\n\n");
         
-        prompt.append("预算数据：\n");
+        prompt.append("预算情况：\n");
         prompt.append("- 总预算：").append(budgetData.get("totalBudget")).append("元\n");
         prompt.append("- 已支出：").append(expenseData.get("totalExpense")).append("元\n");
         prompt.append("- 剩余预算：").append(budgetData.get("remainingBudget")).append("元\n");
@@ -793,13 +803,11 @@ public class AiService {
             }
         }
         
-        prompt.append("\n请提供以下分析：\n");
-        prompt.append("1. 预算执行情况分析（是否超支、使用率是否合理）\n");
-        prompt.append("2. 支出结构分析（哪些类别支出过高或过低）\n");
-        prompt.append("3. 风险预警（如果存在超支风险）\n");
-        prompt.append("4. 优化建议（如何更好地控制预算）\n");
-        prompt.append("5. 后续支出建议（剩余预算如何合理分配）\n\n");
-        prompt.append("请用中文回答，分析要专业、具体、可操作。");
+        prompt.append("\n请简单分析：\n");
+        prompt.append("1. 当前预算执行情况\n");
+        prompt.append("2. 主要支出类别分析\n");
+        prompt.append("3. 后续支出建议\n\n");
+        prompt.append("请用简洁的中文回答。");
         
         return prompt.toString();
     }
@@ -864,7 +872,11 @@ public class AiService {
             message.put("role", "user");
             message.put("content", buildPrompt(userMessage, planContext));
             messages.add(message);
-            request.put("messages", messages);
+            
+            // 构建input对象（通义千问的正确格式）
+            Map<String, Object> input = new HashMap<>();
+            input.put("messages", messages);
+            request.put("input", input);
             
             // 构建parameters对象
             Map<String, Object> parameters = new HashMap<>();

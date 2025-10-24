@@ -260,9 +260,17 @@ public class ExpenseService {
         }
         
         TravelPlan plan = planOpt.get();
+        log.info("获取预算分析 - 计划ID: {}, 计划预算: {}", planId, plan.getBudget());
         BigDecimal totalBudget = plan.getBudget() != null ? BigDecimal.valueOf(plan.getBudget().doubleValue()) : BigDecimal.ZERO;
         BigDecimal totalExpense = getTotalAmountByPlanId(planId);
+        log.info("预算分析 - 总预算: {}, 总支出: {}", totalBudget, totalExpense);
         Map<Expense.ExpenseCategory, BigDecimal> categoryAmounts = getAmountByCategoryAndPlanId(planId);
+        
+        // 将枚举键转换为字符串键，确保JSON序列化正确
+        Map<String, Object> categoryBreakdown = new HashMap<>();
+        for (Map.Entry<Expense.ExpenseCategory, BigDecimal> entry : categoryAmounts.entrySet()) {
+            categoryBreakdown.put(entry.getKey().getDisplayName(), entry.getValue());
+        }
         
         Map<String, Object> analysis = new HashMap<>();
         analysis.put("planId", planId);
@@ -271,7 +279,7 @@ public class ExpenseService {
         analysis.put("remainingBudget", totalBudget.subtract(totalExpense));
         analysis.put("budgetUtilization", totalBudget.compareTo(BigDecimal.ZERO) > 0 ? 
                 totalExpense.divide(totalBudget, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100")) : BigDecimal.ZERO);
-        analysis.put("categoryBreakdown", categoryAmounts);
+        analysis.put("categoryBreakdown", categoryBreakdown);
         
         // 基础预算建议（规则化）
         List<String> basicSuggestions = new ArrayList<>();
@@ -304,7 +312,7 @@ public class ExpenseService {
             expenseData.put("totalExpense", totalExpense);
             expenseData.put("budgetUtilization", totalBudget.compareTo(BigDecimal.ZERO) > 0 ? 
                     totalExpense.divide(totalBudget, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100")) : BigDecimal.ZERO);
-            expenseData.put("categoryBreakdown", categoryAmounts);
+            expenseData.put("categoryBreakdown", categoryBreakdown);
             
             String aiAnalysis = aiService.analyzeBudgetWithAI(planId, budgetData, expenseData);
             analysis.put("aiAnalysis", aiAnalysis);
