@@ -4,6 +4,7 @@ import com.travelplanner.service.AiService;
 import com.travelplanner.service.ConversationService;
 import com.travelplanner.service.MapService;
 import com.travelplanner.service.TravelPlanService;
+import com.travelplanner.entity.TravelPlan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -63,6 +64,12 @@ public class ConversationController {
                         .orElse("");
             }
             
+            // 提取旅行字段
+            AiService.ExtractedFields extractedFields = aiService.extractTravelFields(request.getMessage());
+            log.info("提取的字段: destination={}, budget={}, groupSize={}, travelType={}", 
+                extractedFields.getDestination(), extractedFields.getBudget(), 
+                extractedFields.getGroupSize(), extractedFields.getTravelType());
+            
             // 调用AI服务生成回复
             String aiResponse;
             if (request.getApiKey() != null && !request.getApiKey().trim().isEmpty()) {
@@ -79,6 +86,9 @@ public class ConversationController {
             
             long processingTime = System.currentTimeMillis() - startTime;
             
+            // 将提取的字段转换为JSON字符串
+            String extractedFieldsJson = convertFieldsToJson(extractedFields);
+            
             // 保存对话记录
             conversationService.saveConversation(
                 request.getUserId(),
@@ -87,7 +97,8 @@ public class ConversationController {
                 aiResponse,
                 "text",
                 null,
-                processingTime
+                processingTime,
+                extractedFieldsJson
             );
             
             // 不再自动创建旅游计划，改为用户手动选择保存
@@ -100,6 +111,19 @@ public class ConversationController {
             response.setTimestamp(LocalDateTime.now().toString());
             response.setCreatedPlanId(createdPlanId);
             
+            // 转换提取的字段为响应格式
+            ExtractedFields responseFields = new ExtractedFields(
+                extractedFields.getDestination(),
+                extractedFields.getBudget(),
+                extractedFields.getGroupSize(),
+                extractedFields.getTravelType()
+            );
+            response.setExtractedFields(responseFields);
+            
+            log.info("响应构建完成: message长度={}, extractedFields={}", 
+                response.getMessage() != null ? response.getMessage().length() : 0,
+                response.getExtractedFields());
+            
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
@@ -107,6 +131,70 @@ public class ConversationController {
             return ResponseEntity.badRequest()
                     .body(MapUtils.of("error", "处理消息时发生错误"));
         }
+    }
+    
+    /**
+     * 使用提取的字段保存旅游计划
+     * 
+     * @param request 保存请求
+     * @return 保存结果
+     */
+    @PostMapping("/save-as-plan-with-fields")
+    public ResponseEntity<?> saveAsPlanWithFields(@Valid @RequestBody SavePlanWithFieldsRequest request) {
+        try {
+            log.info("使用提取字段保存计划: userId={}", request.getUserId());
+            
+            // 设置默认的开始和结束日期（7天后开始，持续3天）
+            java.time.LocalDateTime startDate = java.time.LocalDateTime.now().plusDays(7);
+            java.time.LocalDateTime endDate = startDate.plusDays(3);
+            
+            // 调用TravelPlanService的创建方法
+            TravelPlan createdPlan = travelPlanService.createPlan(
+                request.getUserId(),
+                generatePlanName(request.getExtractedFields()),
+                request.getExtractedFields().getDestination(),
+                startDate,
+                endDate,
+                request.getExtractedFields().getBudget(),
+                request.getExtractedFields().getTravelType(),
+                request.getExtractedFields().getGroupSize(),
+                request.getAiResponse()
+            );
+            
+            return ResponseEntity.ok(MapUtils.of(
+                "planId", createdPlan.getId(),
+                "message", "旅游计划保存成功，已自动填充提取的字段"
+            ));
+            
+        } catch (Exception e) {
+            log.error("保存计划失败: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                    .body(MapUtils.of("error", "保存计划时发生错误"));
+        }
+    }
+    
+    /**
+     * 生成计划名称
+     */
+    private String generatePlanName(ExtractedFields fields) {
+        StringBuilder name = new StringBuilder();
+        
+        if (fields.getDestination() != null) {
+            name.append(fields.getDestination());
+        } else {
+            name.append("旅行");
+        }
+        
+        if (fields.getTravelType() != null) {
+            name.append(fields.getTravelType());
+        }
+        
+        name.append("计划");
+        
+        // 添加时间戳
+        name.append("_").append(System.currentTimeMillis());
+        
+        return name.toString();
     }
     
     /**
@@ -392,7 +480,103 @@ public class ConversationController {
         response.setVoiceFileUrl(conversation.getVoiceFileUrl());
         response.setProcessingTime(conversation.getProcessingTime());
         response.setCreatedAt(conversation.getCreatedAt());
+        
+        // 解析extractedFields JSON字符串
+        if (conversation.getExtractedFields() != null && !conversation.getExtractedFields().trim().isEmpty()) {
+            ExtractedFields extractedFields = parseJsonToFields(conversation.getExtractedFields());
+            response.setExtractedFields(extractedFields);
+        }
+        
         return response;
+    }
+    
+    /**
+     * 将提取的字段转换为JSON字符串
+     */
+    private String convertFieldsToJson(AiService.ExtractedFields fields) {
+        try {
+            StringBuilder json = new StringBuilder();
+            json.append("{");
+            json.append("\"destination\":").append(fields.getDestination() != null ? "\"" + fields.getDestination() + "\"" : "null").append(",");
+            json.append("\"budget\":").append(fields.getBudget() != null ? fields.getBudget() : "null").append(",");
+            json.append("\"groupSize\":").append(fields.getGroupSize() != null ? fields.getGroupSize() : "null").append(",");
+            json.append("\"travelType\":").append(fields.getTravelType() != null ? "\"" + fields.getTravelType() + "\"" : "null");
+            json.append("}");
+            return json.toString();
+        } catch (Exception e) {
+            log.error("转换字段为JSON失败: {}", e.getMessage());
+            return "{}";
+        }
+    }
+    
+    /**
+     * 将JSON字符串解析为ExtractedFields对象
+     */
+    private ExtractedFields parseJsonToFields(String jsonString) {
+        try {
+            ExtractedFields fields = new ExtractedFields();
+            
+            // 简单的JSON解析
+            String json = jsonString.trim();
+            
+            // 提取destination
+            String destination = extractJsonValue(json, "destination");
+            if (destination != null && !destination.equals("null")) {
+                fields.setDestination(destination.replaceAll("\"", "").trim());
+            }
+            
+            // 提取budget
+            String budgetStr = extractJsonValue(json, "budget");
+            if (budgetStr != null && !budgetStr.equals("null")) {
+                try {
+                    Double budget = Double.parseDouble(budgetStr.replaceAll("\"", "").trim());
+                    fields.setBudget(budget);
+                } catch (NumberFormatException e) {
+                    log.warn("预算解析失败: {}", budgetStr);
+                }
+            }
+            
+            // 提取groupSize
+            String groupSizeStr = extractJsonValue(json, "groupSize");
+            if (groupSizeStr != null && !groupSizeStr.equals("null")) {
+                try {
+                    Integer groupSize = Integer.parseInt(groupSizeStr.replaceAll("\"", "").trim());
+                    fields.setGroupSize(groupSize);
+                } catch (NumberFormatException e) {
+                    log.warn("人数解析失败: {}", groupSizeStr);
+                }
+            }
+            
+            // 提取travelType
+            String travelType = extractJsonValue(json, "travelType");
+            if (travelType != null && !travelType.equals("null")) {
+                fields.setTravelType(travelType.replaceAll("\"", "").trim());
+            }
+            
+            return fields;
+            
+        } catch (Exception e) {
+            log.error("解析JSON字段失败: {}", e.getMessage());
+            return new ExtractedFields();
+        }
+    }
+    
+    /**
+     * 从JSON字符串中提取指定字段的值
+     */
+    private String extractJsonValue(String json, String fieldName) {
+        try {
+            String pattern = "\"" + fieldName + "\"\\s*:\\s*([^,}]+)";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return m.group(1).trim();
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("提取JSON字段失败: field={}, error={}", fieldName, e.getMessage());
+            return null;
+        }
     }
     
     // 内部类：请求和响应DTO
@@ -418,6 +602,7 @@ public class ConversationController {
         private Long processingTime;
         private String timestamp;
         private Long createdPlanId;
+        private ExtractedFields extractedFields;
         
         // Getters and Setters
         public String getMessage() { return message; }
@@ -428,6 +613,54 @@ public class ConversationController {
         public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
         public Long getCreatedPlanId() { return createdPlanId; }
         public void setCreatedPlanId(Long createdPlanId) { this.createdPlanId = createdPlanId; }
+        public ExtractedFields getExtractedFields() { return extractedFields; }
+        public void setExtractedFields(ExtractedFields extractedFields) { this.extractedFields = extractedFields; }
+    }
+    
+    /**
+     * 提取的旅行计划字段
+     */
+    public static class ExtractedFields {
+        private String destination;
+        private Double budget;
+        private Integer groupSize;
+        private String travelType;
+        
+        public ExtractedFields() {}
+        
+        public ExtractedFields(String destination, Double budget, Integer groupSize, String travelType) {
+            this.destination = destination;
+            this.budget = budget;
+            this.groupSize = groupSize;
+            this.travelType = travelType;
+        }
+        
+        // Getters and Setters
+        public String getDestination() { return destination; }
+        public void setDestination(String destination) { this.destination = destination; }
+        public Double getBudget() { return budget; }
+        public void setBudget(Double budget) { this.budget = budget; }
+        public Integer getGroupSize() { return groupSize; }
+        public void setGroupSize(Integer groupSize) { this.groupSize = groupSize; }
+        public String getTravelType() { return travelType; }
+        public void setTravelType(String travelType) { this.travelType = travelType; }
+    }
+    
+    /**
+     * 使用提取字段保存计划的请求
+     */
+    public static class SavePlanWithFieldsRequest {
+        private Long userId;
+        private String aiResponse;
+        private ExtractedFields extractedFields;
+        
+        // Getters and Setters
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
+        public String getAiResponse() { return aiResponse; }
+        public void setAiResponse(String aiResponse) { this.aiResponse = aiResponse; }
+        public ExtractedFields getExtractedFields() { return extractedFields; }
+        public void setExtractedFields(ExtractedFields extractedFields) { this.extractedFields = extractedFields; }
     }
     
     public static class VoiceChatResponse {
@@ -460,6 +693,7 @@ public class ConversationController {
         private String voiceFileUrl;
         private Long processingTime;
         private LocalDateTime createdAt;
+        private ExtractedFields extractedFields;
         
         // Getters and Setters
         public Long getId() { return id; }
@@ -480,6 +714,8 @@ public class ConversationController {
         public void setProcessingTime(Long processingTime) { this.processingTime = processingTime; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+        public ExtractedFields getExtractedFields() { return extractedFields; }
+        public void setExtractedFields(ExtractedFields extractedFields) { this.extractedFields = extractedFields; }
     }
     
     /**

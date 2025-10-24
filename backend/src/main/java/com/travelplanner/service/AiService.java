@@ -10,6 +10,8 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * AI服务类 - 集成科大讯飞和阿里通义千问
@@ -38,6 +40,431 @@ public class AiService {
     
     @Value("${app.ai.mock-mode:true}")
     private boolean mockMode;
+    
+    /**
+     * 提取的旅行计划字段
+     */
+    public static class ExtractedFields {
+        private String destination;
+        private Double budget;
+        private Integer groupSize;
+        private String travelType;
+        
+        public ExtractedFields() {}
+        
+        public ExtractedFields(String destination, Double budget, Integer groupSize, String travelType) {
+            this.destination = destination;
+            this.budget = budget;
+            this.groupSize = groupSize;
+            this.travelType = travelType;
+        }
+        
+        // Getters and Setters
+        public String getDestination() { return destination; }
+        public void setDestination(String destination) { this.destination = destination; }
+        public Double getBudget() { return budget; }
+        public void setBudget(Double budget) { this.budget = budget; }
+        public Integer getGroupSize() { return groupSize; }
+        public void setGroupSize(Integer groupSize) { this.groupSize = groupSize; }
+        public String getTravelType() { return travelType; }
+        public void setTravelType(String travelType) { this.travelType = travelType; }
+        
+        /**
+         * 检查是否有任何字段被提取
+         */
+        public boolean hasAnyField() {
+            return destination != null || budget != null || groupSize != null || travelType != null;
+        }
+    }
+    
+    /**
+     * 从用户消息中提取旅行计划字段
+     * 
+     * @param userMessage 用户消息
+     * @return 提取的字段
+     */
+    public ExtractedFields extractTravelFields(String userMessage) {
+        try {
+            log.info("开始提取旅行字段: {}", userMessage);
+            
+            ExtractedFields fields = new ExtractedFields();
+            
+            // 先通过通义千问API提取和规范化字段
+            ExtractedFields aiFields = extractFieldsWithAI(userMessage);
+            
+            // 如果AI提取成功，使用AI的结果
+            if (aiFields != null && aiFields.hasAnyField()) {
+                fields = aiFields;
+                log.info("AI字段提取成功: destination={}, budget={}, groupSize={}, travelType={}", 
+                    fields.getDestination(), fields.getBudget(), fields.getGroupSize(), fields.getTravelType());
+            } else {
+                // 如果AI提取失败，回退到正则表达式提取
+                log.warn("AI字段提取失败，使用正则表达式提取");
+                fields.setDestination(extractDestination(userMessage));
+                fields.setBudget(extractBudget(userMessage));
+                fields.setGroupSize(extractGroupSize(userMessage));
+                fields.setTravelType(extractTravelType(userMessage));
+                
+                log.info("正则表达式字段提取结果: destination={}, budget={}, groupSize={}, travelType={}", 
+                    fields.getDestination(), fields.getBudget(), fields.getGroupSize(), fields.getTravelType());
+            }
+            
+            log.info("字段提取结果: destination={}, budget={}, groupSize={}, travelType={}", 
+                fields.getDestination(), fields.getBudget(), fields.getGroupSize(), fields.getTravelType());
+            
+            return fields;
+            
+        } catch (Exception e) {
+            log.error("字段提取失败: {}", e.getMessage(), e);
+            return new ExtractedFields(); // 返回空字段
+        }
+    }
+    
+    /**
+     * 通过通义千问API提取和规范化字段
+     */
+    private ExtractedFields extractFieldsWithAI(String userMessage) {
+        try {
+            String prompt = String.format(
+                "请从以下用户消息中提取旅行规划的关键信息，并以JSON格式返回：\n" +
+                "用户消息：%s\n\n" +
+                "请提取以下字段：\n" +
+                "1. destination（目的地）：提取具体的城市或国家名称，如\"日本东京\"、\"北京\"等\n" +
+                "2. budget（预算）：提取数字金额，统一转换为人民币元，如10000表示1万元\n" +
+                "3. groupSize（人数）：提取旅行人数，如2表示2个人\n" +
+                "4. travelType（旅行类型）：如\"家庭游\"、\"情侣游\"、\"商务游\"、\"自由行\"等\n\n" +
+                "请严格按照以下JSON格式返回，如果某个字段无法提取则设为null：\n" +
+                "{\n" +
+                "  \"destination\": \"具体目的地\",\n" +
+                "  \"budget\": 数字金额,\n" +
+                "  \"groupSize\": 人数,\n" +
+                "  \"travelType\": \"旅行类型\"\n" +
+                "}",
+                userMessage
+            );
+            
+            log.info("字段提取提示词: {}", prompt);
+            String response = callQwenAPI(prompt);
+            log.info("通义千问字段提取响应: {}", response);
+            
+            // 解析JSON响应
+            ExtractedFields fields = parseFieldsFromAIResponse(response);
+            
+            // 调试输出：打印提取出的字段
+            if (fields != null) {
+                log.info("=== 提取出的字段调试信息 ===");
+                log.info("目的地 (destination): '{}'", fields.getDestination());
+                log.info("预算 (budget): {}", fields.getBudget());
+                log.info("团队人数 (groupSize): {}", fields.getGroupSize());
+                log.info("旅行类型 (travelType): '{}'", fields.getTravelType());
+                log.info("=== 字段提取完成 ===");
+            } else {
+                log.warn("字段提取结果为null");
+            }
+            
+            return fields;
+            
+        } catch (Exception e) {
+            log.error("AI字段提取失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * 解析AI响应的JSON格式字段
+     */
+    private ExtractedFields parseFieldsFromAIResponse(String response) {
+        try {
+            ExtractedFields fields = new ExtractedFields();
+            
+            // 简单的JSON解析（不使用复杂的JSON库）
+            String jsonContent = response.trim();
+            log.info("开始解析JSON响应: {}", jsonContent);
+            
+            // 提取destination
+            String destination = extractJsonValue(jsonContent, "destination");
+            log.info("提取的destination原始值: '{}'", destination);
+            if (destination != null && !destination.equals("null")) {
+                fields.setDestination(destination.replaceAll("\"", "").trim());
+            }
+            
+            // 提取budget
+            String budgetStr = extractJsonValue(jsonContent, "budget");
+            log.info("提取的budget原始值: '{}'", budgetStr);
+            if (budgetStr != null && !budgetStr.equals("null")) {
+                try {
+                    Double budget = Double.parseDouble(budgetStr.replaceAll("\"", "").trim());
+                    fields.setBudget(budget);
+                } catch (NumberFormatException e) {
+                    log.warn("预算解析失败: {}", budgetStr);
+                }
+            }
+            
+            // 提取groupSize
+            String groupSizeStr = extractJsonValue(jsonContent, "groupSize");
+            log.info("提取的groupSize原始值: '{}'", groupSizeStr);
+            if (groupSizeStr != null && !groupSizeStr.equals("null")) {
+                try {
+                    Integer groupSize = Integer.parseInt(groupSizeStr.replaceAll("\"", "").trim());
+                    fields.setGroupSize(groupSize);
+                } catch (NumberFormatException e) {
+                    log.warn("人数解析失败: {}", groupSizeStr);
+                }
+            }
+            
+            // 提取travelType
+            String travelType = extractJsonValue(jsonContent, "travelType");
+            log.info("提取的travelType原始值: '{}'", travelType);
+            if (travelType != null && !travelType.equals("null")) {
+                fields.setTravelType(travelType.replaceAll("\"", "").trim());
+            }
+            
+            log.info("JSON解析完成，最终字段: destination='{}', budget={}, groupSize={}, travelType='{}'", 
+                fields.getDestination(), fields.getBudget(), fields.getGroupSize(), fields.getTravelType());
+            
+            return fields;
+            
+        } catch (Exception e) {
+            log.error("解析AI响应失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * 从JSON字符串中提取指定字段的值
+     */
+    private String extractJsonValue(String json, String fieldName) {
+        try {
+            String pattern = "\"" + fieldName + "\"\\s*:\\s*([^,}\\]]+)";
+            Pattern regex = Pattern.compile(pattern);
+            Matcher matcher = regex.matcher(json);
+            
+            log.info("提取字段 '{}' 的正则表达式: {}", fieldName, pattern);
+            log.info("匹配的JSON内容: {}", json);
+            
+            if (matcher.find()) {
+                String result = matcher.group(1).trim();
+                log.info("字段 '{}' 提取结果: '{}'", fieldName, result);
+                return result;
+            }
+            log.warn("字段 '{}' 未找到匹配", fieldName);
+            return null;
+        } catch (Exception e) {
+            log.warn("提取JSON字段失败: {}", fieldName, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 调用通义千问API的通用方法
+     */
+    private String callQwenAPI(String prompt) {
+        try {
+            // 构建请求体 - 使用通义千问的正确格式
+            Map<String, Object> request = new HashMap<>();
+            request.put("model", "qwen-turbo");
+            
+            // 使用messages格式（通义千问标准格式）
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", prompt);
+            messages.add(message);
+            
+            // 构建input对象（通义千问的正确格式）
+            Map<String, Object> input = new HashMap<>();
+            input.put("messages", messages);
+            request.put("input", input);
+            
+            // 构建parameters对象
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("temperature", 0.3); // 降低温度以获得更稳定的JSON输出
+            parameters.put("max_tokens", 500);  // 减少token数量
+            request.put("parameters", parameters);
+            
+            // 设置请求头
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + qwenApiKey);
+            headers.set("X-DashScope-Async", "disable"); // 确保同步调用
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+            
+            // 使用正确的通义千问API端点
+            String url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
+            
+            log.info("调用通义千问字段提取API: {}", url);
+            
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(url, entity, (Class<Map<String, Object>>) (Class<?>) Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                
+                // 检查是否有错误
+                if (responseBody.containsKey("code")) {
+                    String errorCode = String.valueOf(responseBody.get("code"));
+                    String errorMessage = String.valueOf(responseBody.get("message"));
+                    log.error("通义千问API返回错误: code={}, message={}", errorCode, errorMessage);
+                    return null;
+                }
+                
+                // 解析响应 - 通义千问的响应格式
+                if (responseBody.containsKey("output")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
+                    if (output != null && output.containsKey("text")) {
+                        String text = (String) output.get("text");
+                        log.info("通义千问字段提取成功，内容长度: {}", text != null ? text.length() : 0);
+                        return text;
+                    }
+                }
+            }
+            
+            return null;
+            
+        } catch (Exception e) {
+            log.error("通义千问API调用失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * 提取目的地
+     */
+    private String extractDestination(String userMessage) {
+        // 常见目的地关键词
+        String[] destinations = {
+            "北京", "上海", "广州", "深圳", "杭州", "南京", "苏州", "成都", "重庆", "西安", "武汉", "长沙", "青岛", "大连", "厦门", "福州", "昆明", "贵阳", "南宁", "海口", "三亚", "拉萨", "乌鲁木齐", "银川", "西宁", "兰州", "呼和浩特", "哈尔滨", "长春", "沈阳", "石家庄", "太原", "济南", "合肥", "南昌", "郑州", "长沙", "武汉", "成都", "重庆", "贵阳", "昆明", "南宁", "海口", "三亚", "拉萨", "乌鲁木齐", "银川", "西宁", "兰州", "呼和浩特",
+            "日本", "东京", "大阪", "京都", "北海道", "冲绳", "韩国", "首尔", "釜山", "济州岛", "新加坡", "马来西亚", "吉隆坡", "泰国", "曼谷", "普吉岛", "清迈", "越南", "河内", "胡志明市", "柬埔寨", "吴哥窟", "缅甸", "仰光", "老挝", "万象", "菲律宾", "马尼拉", "长滩岛", "印度尼西亚", "巴厘岛", "雅加达", "印度", "新德里", "孟买", "尼泊尔", "加德满都", "斯里兰卡", "科伦坡", "马尔代夫", "马累",
+            "美国", "纽约", "洛杉矶", "旧金山", "拉斯维加斯", "夏威夷", "加拿大", "温哥华", "多伦多", "墨西哥", "墨西哥城", "巴西", "里约热内卢", "圣保罗", "阿根廷", "布宜诺斯艾利斯", "智利", "圣地亚哥", "秘鲁", "利马", "哥伦比亚", "波哥大",
+            "英国", "伦敦", "爱丁堡", "法国", "巴黎", "里昂", "德国", "柏林", "慕尼黑", "意大利", "罗马", "米兰", "威尼斯", "西班牙", "马德里", "巴塞罗那", "葡萄牙", "里斯本", "荷兰", "阿姆斯特丹", "比利时", "布鲁塞尔", "瑞士", "苏黎世", "日内瓦", "奥地利", "维也纳", "捷克", "布拉格", "匈牙利", "布达佩斯", "波兰", "华沙", "俄罗斯", "莫斯科", "圣彼得堡", "希腊", "雅典", "土耳其", "伊斯坦布尔", "挪威", "奥斯陆", "瑞典", "斯德哥尔摩", "丹麦", "哥本哈根", "芬兰", "赫尔辛基", "冰岛", "雷克雅未克",
+            "澳大利亚", "悉尼", "墨尔本", "珀斯", "新西兰", "奥克兰", "惠灵顿", "斐济", "苏瓦"
+        };
+        
+        String message = userMessage.toLowerCase();
+        for (String dest : destinations) {
+            if (message.contains(dest.toLowerCase())) {
+                return dest;
+            }
+        }
+        
+        // 使用正则表达式匹配"去"、"到"等关键词后的地名
+        Pattern pattern = Pattern.compile("(?:去|到|前往|游览|参观|旅游|旅行)([\\u4e00-\\u9fa5]{2,10})");
+        Matcher matcher = pattern.matcher(userMessage);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 提取预算
+     */
+    private Double extractBudget(String userMessage) {
+        // 匹配各种预算表达方式
+        Pattern[] patterns = {
+            Pattern.compile("(?:预算|花费|费用|价格|价钱|成本)(?:是|为|约|大概|左右)?(?:\\s*)([0-9]+(?:\\.[0-9]+)?)(?:万|千|元|块)?"),
+            Pattern.compile("([0-9]+(?:\\.[0-9]+)?)(?:万|千|元|块)(?:的)?(?:预算|花费|费用)"),
+            Pattern.compile("(?:准备|计划|打算)(?:花|用|花费)([0-9]+(?:\\.[0-9]+)?)(?:万|千|元|块)"),
+            Pattern.compile("([0-9]+(?:\\.[0-9]+)?)(?:万|千|元|块)(?:以内|以下|左右|上下)")
+        };
+        
+        for (Pattern pattern : patterns) {
+            Matcher matcher = pattern.matcher(userMessage);
+            if (matcher.find()) {
+                String amountStr = matcher.group(1);
+                try {
+                    double amount = Double.parseDouble(amountStr);
+                    
+                    // 检查单位
+                    String fullMatch = matcher.group(0);
+                    if (fullMatch.contains("万")) {
+                        amount *= 10000;
+                    } else if (fullMatch.contains("千")) {
+                        amount *= 1000;
+                    }
+                    
+                    return amount;
+                } catch (NumberFormatException e) {
+                    log.warn("预算数字解析失败: {}", amountStr);
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 提取人数
+     */
+    private Integer extractGroupSize(String userMessage) {
+        // 匹配各种人数表达方式
+        Pattern[] patterns = {
+            Pattern.compile("([0-9]+)(?:个人|人|名|位)"),  // 最简单的模式：数字+人
+            Pattern.compile("(?:带|和|与|跟)([0-9]+)(?:个|名|位|人)(?:孩子|朋友|家人|同伴|伙伴)"),
+            Pattern.compile("([0-9]+)(?:个人|人|名|位)(?:一起|一同|共同)"),
+            Pattern.compile("(?:一共|总共|合计)([0-9]+)(?:个人|人|名|位)"),
+            Pattern.compile("(?:我们|咱们)([0-9]+)(?:个人|人|名|位)"),
+            Pattern.compile("(?:家庭|团队|小组)(?:有|是)([0-9]+)(?:个人|人|名|位)"),
+            Pattern.compile("([0-9]+)(?:人|个人|名|位)(?:的)?(?:旅行|旅游|出行)")
+        };
+        
+        for (Pattern pattern : patterns) {
+            Matcher matcher = pattern.matcher(userMessage);
+            if (matcher.find()) {
+                try {
+                    int count = Integer.parseInt(matcher.group(1));
+                    return count;
+                } catch (NumberFormatException e) {
+                    log.warn("人数数字解析失败: {}", matcher.group(1));
+                }
+            }
+        }
+        
+        // 特殊关键词匹配
+        if (userMessage.contains("一个人") || userMessage.contains("独自") || userMessage.contains("单独")) {
+            return 1;
+        }
+        if (userMessage.contains("两个人") || userMessage.contains("情侣") || userMessage.contains("夫妻")) {
+            return 2;
+        }
+        if (userMessage.contains("一家人") || userMessage.contains("全家")) {
+            return 3; // 默认一家三口
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 提取旅行类型
+     */
+    private String extractTravelType(String userMessage) {
+        String message = userMessage.toLowerCase();
+        
+        if (message.contains("商务") || message.contains("出差") || message.contains("会议")) {
+            return "商务";
+        } else if (message.contains("蜜月") || message.contains("情侣") || message.contains("浪漫")) {
+            return "蜜月";
+        } else if (message.contains("家庭") || message.contains("亲子") || message.contains("带孩子")) {
+            return "家庭";
+        } else if (message.contains("探险") || message.contains("户外") || message.contains("徒步") || message.contains("登山")) {
+            return "探险";
+        } else if (message.contains("美食") || message.contains("吃货") || message.contains("品尝")) {
+            return "美食";
+        } else if (message.contains("文化") || message.contains("历史") || message.contains("古迹") || message.contains("博物馆")) {
+            return "文化";
+        } else if (message.contains("购物") || message.contains("血拼") || message.contains("买买买")) {
+            return "购物";
+        } else if (message.contains("休闲") || message.contains("度假") || message.contains("放松")) {
+            return "休闲";
+        } else if (message.contains("摄影") || message.contains("拍照") || message.contains("打卡")) {
+            return "摄影";
+        }
+        
+        return "休闲"; // 默认类型
+    }
     
     /**
      * 使用通义千问生成旅游计划

@@ -47,6 +47,9 @@ public class Conversation {
     @Column(name = "processing_time")
     private Long processingTime; // 处理时间(毫秒)
     
+    @Column(name = "extracted_fields", length = 1000)
+    private String extractedFields; // 提取的旅行字段(JSON格式)
+    
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

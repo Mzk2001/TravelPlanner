@@ -37,11 +37,12 @@ public class ConversationService {
      * @param messageType 消息类型
      * @param voiceFileUrl 语音文件URL
      * @param processingTime 处理时间
+     * @param extractedFields 提取的旅行字段(JSON格式)
      * @return 保存的对话记录ID
      */
     public Long saveConversation(Long userId, Long planId, String userMessage,
                                 String aiResponse, String messageType,
-                                String voiceFileUrl, Long processingTime) {
+                                String voiceFileUrl, Long processingTime, String extractedFields) {
         log.info("保存对话记录: userId={}, planId={}", userId, planId);
         
         Conversation conversation = new Conversation();
@@ -52,11 +53,30 @@ public class ConversationService {
         conversation.setMessageType(messageType);
         conversation.setVoiceFileUrl(voiceFileUrl);
         conversation.setProcessingTime(processingTime);
+        conversation.setExtractedFields(extractedFields);
         
         Conversation savedConversation = conversationRepository.save(conversation);
         log.info("对话记录保存成功: conversationId={}", savedConversation.getId());
         
         return savedConversation.getId();
+    }
+    
+    /**
+     * 保存对话记录（向后兼容方法）
+     * 
+     * @param userId 用户ID
+     * @param planId 计划ID
+     * @param userMessage 用户消息
+     * @param aiResponse AI回复
+     * @param messageType 消息类型
+     * @param voiceFileUrl 语音文件URL
+     * @param processingTime 处理时间
+     * @return 保存的对话记录ID
+     */
+    public Long saveConversation(Long userId, Long planId, String userMessage,
+                                String aiResponse, String messageType,
+                                String voiceFileUrl, Long processingTime) {
+        return saveConversation(userId, planId, userMessage, aiResponse, messageType, voiceFileUrl, processingTime, null);
     }
     
     /**

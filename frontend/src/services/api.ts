@@ -13,6 +13,7 @@ import {
   ChatRequest,
   ChatResponse,
   VoiceChatResponse,
+  ExtractedFields,
   ApiResponse,
   PageResponse,
   PlaceSearchResult,
@@ -135,10 +136,13 @@ class ApiService {
 
   // 对话相关API
   async sendMessage(chatData: ChatRequest): Promise<ChatResponse> {
+    console.log('🌐 API调用: sendMessage', chatData);
     // 为聊天API单独设置更长的超时时间
     const response = await this.api.post('/conversations/chat', chatData, {
       timeout: 120000 // 2分钟超时，给AI生成足够时间
     });
+    console.log('📡 API响应: sendMessage', response.data);
+    console.log('📋 响应中的extractedFields:', response.data.extractedFields);
     return response.data;
   }
 
@@ -182,7 +186,22 @@ class ApiService {
     if (planId) {
       params.planId = planId;
     }
+    console.log('🌐 API调用: getConversations', { params });
     const response = await this.api.get('/conversations', { params });
+    console.log('📡 API响应: getConversations', response.data);
+    
+    // 检查响应中的extractedFields
+    if (response.data?.content) {
+      response.data.content.forEach((conv: any, index: number) => {
+        console.log(`📋 API对话 ${index + 1} extractedFields:`, {
+          id: conv.id,
+          extractedFields: conv.extractedFields,
+          hasExtractedFields: !!conv.extractedFields,
+          extractedFieldsType: typeof conv.extractedFields
+        });
+      });
+    }
+    
     return response.data;
   }
 
@@ -205,6 +224,19 @@ class ApiService {
     const response = await this.api.post('/conversations/save-as-plan', {
       userId,
       conversationId
+    });
+    return response.data;
+  }
+
+  async saveAsPlanWithFields(
+    userId: number, 
+    aiResponse: string, 
+    extractedFields: ExtractedFields
+  ): Promise<{ planId: number; message: string }> {
+    const response = await this.api.post('/conversations/save-as-plan-with-fields', {
+      userId,
+      aiResponse,
+      extractedFields
     });
     return response.data;
   }

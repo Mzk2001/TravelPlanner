@@ -31,7 +31,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 import Header from '../components/Header';
-import { Conversation, ChatRequest, ChatResponse, TravelPlan } from '../types';
+import { Conversation, ChatRequest, ChatResponse, TravelPlan, ExtractedFields } from '../types';
 import dayjs from 'dayjs';
 
 const { Content } = Layout;
@@ -51,6 +51,8 @@ const ChatPage: React.FC = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingConversation, setEditingConversation] = useState<Conversation | null>(null);
   const [savedPlanId, setSavedPlanId] = useState<number | null>(null);
+  const [lastExtractedFields, setLastExtractedFields] = useState<ExtractedFields | null>(null);
+  const [lastAiResponse, setLastAiResponse] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,7 +82,23 @@ const ChatPage: React.FC = () => {
     if (!user) return;
     
     try {
+      console.log('🔍 开始获取对话数据...', { userId: user.id, selectedPlanId });
       const response = await apiService.getConversations(user.id, selectedPlanId);
+      console.log('📥 获取到的对话数据:', response);
+      console.log('📋 对话内容详情:', response.content);
+      
+      // 检查每个对话的extractedFields
+      response.content.forEach((conv, index) => {
+        console.log(`💬 对话 ${index + 1}:`, {
+          id: conv.id,
+          userMessage: conv.userMessage,
+          aiResponse: conv.aiResponse?.substring(0, 100) + '...',
+          extractedFields: conv.extractedFields,
+          hasExtractedFields: !!conv.extractedFields,
+          extractedFieldsType: typeof conv.extractedFields
+        });
+      });
+      
       setConversations(response.content.reverse()); // 反转以显示最新的在底部
     } catch (error) {
       console.error('获取对话历史失败:', error);
@@ -145,14 +163,43 @@ const ChatPage: React.FC = () => {
       const response: ChatResponse = await apiService.sendMessage(chatRequest);
       
       // 更新AI思考中的消息为实际回复
-      console.log('AI回复内容:', response.message);
-      console.log('处理时间:', response.processingTime);
+      console.log('🤖 AI回复内容:', response.message);
+      console.log('⏱️ 处理时间:', response.processingTime);
+      console.log('📋 提取的字段:', response.extractedFields);
+      console.log('🔍 提取字段详情:', {
+        destination: response.extractedFields?.destination,
+        budget: response.extractedFields?.budget,
+        groupSize: response.extractedFields?.groupSize,
+        travelType: response.extractedFields?.travelType,
+        hasExtractedFields: !!response.extractedFields,
+        extractedFieldsType: typeof response.extractedFields
+      });
+      
+      // 保存提取的字段和AI回复，用于后续保存计划
+      if (response.extractedFields) {
+        setLastExtractedFields(response.extractedFields);
+        setLastAiResponse(response.message);
+      }
       
       setConversations(prev => 
         prev.map(conv => {
           if (conv.id === thinkingMessage.id) {
-            const updatedConv = { ...conv, aiResponse: response.message, processingTime: response.processingTime };
-            console.log('更新后的对话:', updatedConv);
+            const updatedConv = { 
+              ...conv, 
+              aiResponse: response.message, 
+              processingTime: response.processingTime,
+              extractedFields: response.extractedFields
+            };
+            console.log('🔄 更新后的对话:', updatedConv);
+            console.log('📋 更新后的提取字段:', updatedConv.extractedFields);
+            console.log('🔍 字段检查:', {
+              hasExtractedFields: !!updatedConv.extractedFields,
+              extractedFieldsType: typeof updatedConv.extractedFields,
+              destination: updatedConv.extractedFields?.destination,
+              budget: updatedConv.extractedFields?.budget,
+              groupSize: updatedConv.extractedFields?.groupSize,
+              travelType: updatedConv.extractedFields?.travelType
+            });
             return updatedConv;
           }
           return conv;
@@ -229,11 +276,29 @@ const ChatPage: React.FC = () => {
     if (!user) return;
     
     try {
-      const response = await apiService.saveAsPlan(user.id, conversationId);
-      antdMessage.success('旅游计划保存成功！');
-      
-      // 记录保存的计划ID
-      setSavedPlanId(response.planId);
+      // 如果有提取的字段，使用新的API方法
+      if (lastExtractedFields && lastAiResponse) {
+        const response = await apiService.saveAsPlanWithFields(
+          user.id, 
+          lastAiResponse, 
+          lastExtractedFields
+        );
+        antdMessage.success('旅游计划保存成功！已自动填充提取的字段');
+        
+        // 记录保存的计划ID
+        setSavedPlanId(response.planId);
+        
+        // 清空提取的字段
+        setLastExtractedFields(null);
+        setLastAiResponse('');
+      } else {
+        // 使用原有的方法
+        const response = await apiService.saveAsPlan(user.id, conversationId);
+        antdMessage.success('旅游计划保存成功！');
+        
+        // 记录保存的计划ID
+        setSavedPlanId(response.planId);
+      }
       
       // 刷新计划列表
       fetchPlans();
@@ -345,7 +410,18 @@ const ChatPage: React.FC = () => {
                 ) : (
                   <List
                     dataSource={conversations}
-                    renderItem={(conv) => (
+                    renderItem={(conv) => {
+                      // 添加渲染时的日志
+                      console.log('🎨 渲染对话:', {
+                        id: conv.id,
+                        userMessage: conv.userMessage,
+                        aiResponse: conv.aiResponse?.substring(0, 50) + '...',
+                        extractedFields: conv.extractedFields,
+                        hasExtractedFields: !!conv.extractedFields,
+                        extractedFieldsType: typeof conv.extractedFields
+                      });
+                      
+                      return (
                       <div key={conv.id} style={{ marginBottom: 16 }}>
                         {/* 用户消息 */}
                         <div style={{ 
@@ -392,6 +468,65 @@ const ChatPage: React.FC = () => {
                             borderRadius: '12px 12px 12px 4px'
                           }}>
                             <div>{conv.aiResponse}</div>
+                            
+                            {/* 显示提取的字段 */}
+                            {conv.extractedFields && (
+                              <div style={{
+                                marginTop: 12,
+                                padding: '8px 12px',
+                                background: '#e6f7ff',
+                                border: '1px solid #91d5ff',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: 6, color: '#1890ff' }}>
+                                  📋 提取的旅行信息
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                  {conv.extractedFields.destination && (
+                                    <span style={{ 
+                                      background: '#f0f0f0', 
+                                      padding: '2px 6px', 
+                                      borderRadius: '4px',
+                                      fontSize: '12px'
+                                    }}>
+                                      🏛️ 目的地: {conv.extractedFields.destination}
+                                    </span>
+                                  )}
+                                  {conv.extractedFields.budget && (
+                                    <span style={{ 
+                                      background: '#f0f0f0', 
+                                      padding: '2px 6px', 
+                                      borderRadius: '4px',
+                                      fontSize: '12px'
+                                    }}>
+                                      💰 预算: ¥{conv.extractedFields.budget}
+                                    </span>
+                                  )}
+                                  {conv.extractedFields.groupSize && (
+                                    <span style={{ 
+                                      background: '#f0f0f0', 
+                                      padding: '2px 6px', 
+                                      borderRadius: '4px',
+                                      fontSize: '12px'
+                                    }}>
+                                      👥 人数: {conv.extractedFields.groupSize}人
+                                    </span>
+                                  )}
+                                  {conv.extractedFields.travelType && (
+                                    <span style={{ 
+                                      background: '#f0f0f0', 
+                                      padding: '2px 6px', 
+                                      borderRadius: '4px',
+                                      fontSize: '12px'
+                                    }}>
+                                      🎯 类型: {conv.extractedFields.travelType}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
                             <div style={{ 
                               fontSize: '12px', 
                               color: '#999',
@@ -450,7 +585,8 @@ const ChatPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    )}
+                      );
+                    }}
                   />
                 )}
                 <div ref={messagesEndRef} />

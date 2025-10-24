@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字段提取测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>字段提取功能测试</h1>
+    
+    <div class="test-section">
+        <h3>测试消息</h3>
+        <textarea id="testMessage" rows="3" style="width: 100%;">我想去日本东京旅游，预算1万元，2个人，家庭游</textarea>
+        <br>
+        <button onclick="testFieldExtraction()">测试字段提取</button>
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>其他测试用例</h3>
+        <button onclick="testCase1()">测试用例1: 北京3日游</button>
+        <button onclick="testCase2()">测试用例2: 上海商务出差</button>
+        <button onclick="testCase3()">测试用例3: 成都美食之旅</button>
+    </div>
+
+    <script>
+        async function testFieldExtraction() {
+            const message = document.getElementById('testMessage').value;
+            await sendTestMessage(message);
+        }
+
+        async function testCase1() {
+            const message = "我想去北京旅游3天，预算5000元，1个人，自由行";
+            document.getElementById('testMessage').value = message;
+            await sendTestMessage(message);
+        }
+
+        async function testCase2() {
+            const message = "上海商务出差，预算8000元，1个人，商务游";
+            document.getElementById('testMessage').value = message;
+            await sendTestMessage(message);
+        }
+
+        async function testCase3() {
+            const message = "成都美食之旅，预算3000元，4个人，朋友游";
+            document.getElementById('testMessage').value = message;
+            await sendTestMessage(message);
+        }
+
+        async function sendTestMessage(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '发送中...';
+
+            try {
+                const response = await fetch('http://localhost:8080/api/conversations/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        userId: 1
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `测试成功！
+                
+原始消息: ${message}
+
+AI响应: ${data.message}
+
+提取的字段:
+- 目的地: ${data.extractedFields?.destination || '未提取'}
+- 预算: ${data.extractedFields?.budget || '未提取'}
+- 团队人数: ${data.extractedFields?.groupSize || '未提取'}
+- 旅行类型: ${data.extractedFields?.travelType || '未提取'}`;
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `测试失败: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

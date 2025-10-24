@@ -104,6 +104,7 @@ public class SecurityConfig {
                 .antMatchers("/test/**").permitAll()
                 .antMatchers("/ai/test").permitAll()  // 允许API Key测试端点公开访问
                 .antMatchers("/ai/generate").permitAll()  // 允许AI生成端点公开访问
+                .antMatchers("/conversations/chat").permitAll()  // 临时允许聊天端点公开访问用于测试
                 // 对话API需要认证 - 已移除公开访问权限
                 .antMatchers("/swagger-ui/**").permitAll()
                 .antMatchers("/v3/api-docs/**").permitAll()

@@ -93,6 +93,7 @@ export interface Conversation {
   voiceFileUrl?: string;
   processingTime: number;
   createdAt: string;
+  extractedFields?: ExtractedFields;
 }
 
 export interface ChatRequest {
@@ -106,6 +107,15 @@ export interface ChatResponse {
   message: string;
   processingTime: number;
   timestamp: string;
+  createdPlanId?: number;
+  extractedFields?: ExtractedFields;
+}
+
+export interface ExtractedFields {
+  destination?: string;
+  budget?: number;
+  groupSize?: number;
+  travelType?: string;
 }
 
 export interface VoiceChatResponse {
