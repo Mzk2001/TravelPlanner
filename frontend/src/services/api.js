@@ -112,6 +112,9 @@ export const conversationAPI = {
   
   saveAsPlan: (planData) => 
     api.post('/conversations/save-as-plan-direct', planData),
+  
+  saveAsPlanWithFields: (planData) => 
+    api.post('/conversations/save-as-plan-with-fields', planData),
 };
 
 export default api;

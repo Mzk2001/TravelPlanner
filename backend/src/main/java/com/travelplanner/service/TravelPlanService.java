@@ -66,6 +66,46 @@ public class TravelPlanService {
     }
     
     /**
+     * 创建旅游计划（带AI生成内容）
+     * 
+     * @param userId 用户ID
+     * @param planName 计划名称
+     * @param destination 目的地
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param budget 预算
+     * @param travelType 旅游类型
+     * @param groupSize 团队人数
+     * @param specialRequirements 特殊要求
+     * @param aiGenerated AI生成内容
+     * @return 创建的旅游计划
+     */
+    public TravelPlan createPlanWithAi(Long userId, String planName, String destination,
+                                      LocalDateTime startDate, LocalDateTime endDate,
+                                      Double budget, String travelType, Integer groupSize,
+                                      String specialRequirements, String aiGenerated) {
+        log.info("创建旅游计划（带AI内容）: userId={}, planName={}, destination={}", userId, planName, destination);
+        
+        TravelPlan plan = new TravelPlan();
+        plan.setUserId(userId);
+        plan.setPlanName(planName);
+        plan.setDestination(destination);
+        plan.setStartDate(startDate);
+        plan.setEndDate(endDate);
+        plan.setBudget(budget);
+        plan.setTravelType(travelType);
+        plan.setGroupSize(groupSize);
+        plan.setSpecialRequirements(specialRequirements);
+        plan.setAiGenerated(aiGenerated);
+        plan.setStatus(TravelPlan.PlanStatus.COMPLETED);
+        
+        TravelPlan savedPlan = travelPlanRepository.save(plan);
+        log.info("旅游计划创建成功（带AI内容）: planId={}", savedPlan.getId());
+        
+        return savedPlan;
+    }
+    
+    /**
      * 根据ID查找旅游计划
      * 
      * @param id 计划ID

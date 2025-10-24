@@ -51,8 +51,6 @@ const ChatPage: React.FC = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingConversation, setEditingConversation] = useState<Conversation | null>(null);
   const [savedPlanId, setSavedPlanId] = useState<number | null>(null);
-  const [lastExtractedFields, setLastExtractedFields] = useState<ExtractedFields | null>(null);
-  const [lastAiResponse, setLastAiResponse] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -175,12 +173,6 @@ const ChatPage: React.FC = () => {
         extractedFieldsType: typeof response.extractedFields
       });
       
-      // 保存提取的字段和AI回复，用于后续保存计划
-      if (response.extractedFields) {
-        setLastExtractedFields(response.extractedFields);
-        setLastAiResponse(response.message);
-      }
-      
       setConversations(prev => 
         prev.map(conv => {
           if (conv.id === thinkingMessage.id) {
@@ -276,22 +268,34 @@ const ChatPage: React.FC = () => {
     if (!user) return;
     
     try {
+      // 找到对应的对话对象
+      const conversation = conversations.find(conv => conv.id === conversationId);
+      if (!conversation) {
+        antdMessage.error('找不到对应的对话');
+        return;
+      }
+      
+      console.log('💾 保存计划 - 对话信息:', {
+        id: conversation.id,
+        aiResponse: conversation.aiResponse?.substring(0, 100) + '...',
+        extractedFields: conversation.extractedFields,
+        hasExtractedFields: !!conversation.extractedFields
+      });
+      
       // 如果有提取的字段，使用新的API方法
-      if (lastExtractedFields && lastAiResponse) {
+      if (conversation.extractedFields && conversation.aiResponse) {
+        console.log('✅ 使用提取字段保存计划:', conversation.extractedFields);
         const response = await apiService.saveAsPlanWithFields(
           user.id, 
-          lastAiResponse, 
-          lastExtractedFields
+          conversation.aiResponse, 
+          conversation.extractedFields
         );
         antdMessage.success('旅游计划保存成功！已自动填充提取的字段');
         
         // 记录保存的计划ID
         setSavedPlanId(response.planId);
-        
-        // 清空提取的字段
-        setLastExtractedFields(null);
-        setLastAiResponse('');
       } else {
+        console.log('⚠️ 没有提取字段，使用原有方法保存');
         // 使用原有的方法
         const response = await apiService.saveAsPlan(user.id, conversationId);
         antdMessage.success('旅游计划保存成功！');
@@ -303,6 +307,7 @@ const ChatPage: React.FC = () => {
       // 刷新计划列表
       fetchPlans();
     } catch (error) {
+      console.error('保存计划失败:', error);
       antdMessage.error('保存旅游计划失败');
     }
   };

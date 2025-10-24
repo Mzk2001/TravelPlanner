@@ -90,12 +90,16 @@ const ChatPage = () => {
         id: Date.now() + 1,
         aiResponse: aiResponse.message,
         messageType: 'text',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        processingTime: aiResponse.processingTime,
+        extractedFields: aiResponse.extractedFields
       };
       
       // 调试信息
       console.log('AI回复内容:', aiResponse.message);
       console.log('AI回复长度:', aiResponse.message?.length);
+      console.log('处理时间:', aiResponse.processingTime);
+      console.log('提取的字段:', aiResponse.extractedFields);
       console.log('新消息对象:', newAiMessage);
       
       setMessages(prev => {
@@ -126,18 +130,38 @@ const ChatPage = () => {
     }
 
     try {
-      // 使用saveAsPlan接口，这会正确设置状态
-      const response = await conversationAPI.saveAsPlan({
-        userId: user.id,
-        userMessage: messageItem.userMessage || 'AI生成的旅行计划',
-        aiResponse: messageItem.aiResponse
+      console.log('保存计划 - 消息信息:', {
+        id: messageItem.id,
+        aiResponse: messageItem.aiResponse?.substring(0, 100) + '...',
+        extractedFields: messageItem.extractedFields,
+        hasExtractedFields: !!messageItem.extractedFields
       });
 
-      console.log('保存计划响应:', response);
-      message.success('旅行计划保存成功！');
-      
-      // 保存计划ID，用于后续编辑
-      setSavedPlanId(response.data.id);
+      // 如果有提取的字段，使用新的API方法
+      if (messageItem.extractedFields && messageItem.aiResponse) {
+        console.log('✅ 使用提取字段保存计划:', messageItem.extractedFields);
+        const response = await conversationAPI.saveAsPlanWithFields({
+          userId: user.id,
+          aiResponse: messageItem.aiResponse,
+          extractedFields: messageItem.extractedFields
+        });
+        message.success('旅行计划保存成功！已自动填充提取的字段');
+        
+        // 保存计划ID，用于后续编辑
+        setSavedPlanId(response.data.planId);
+      } else {
+        console.log('⚠️ 没有提取字段，使用原有方法保存');
+        // 使用原有的方法
+        const response = await conversationAPI.saveAsPlan({
+          userId: user.id,
+          userMessage: messageItem.userMessage || 'AI生成的旅行计划',
+          aiResponse: messageItem.aiResponse
+        });
+        message.success('旅行计划保存成功！');
+        
+        // 保存计划ID，用于后续编辑
+        setSavedPlanId(response.data.id);
+      }
       
     } catch (error) {
       console.error('保存计划失败:', error);
@@ -146,23 +170,36 @@ const ChatPage = () => {
   };
 
   // 编辑旅行计划
-  const handleEditPlan = () => {
+  const handleEditPlan = async () => {
     if (!savedPlanId) {
       message.error('没有可编辑的计划');
       return;
     }
     
-    // 设置表单初始值
-    editForm.setFieldsValue({
-      planName: `旅行计划_${new Date().toLocaleDateString()}`,
-      destination: '待定',
-      travelType: '休闲',
-      groupSize: 1,
-      budget: null,
-      specialRequirements: messages.find(msg => msg.aiResponse)?.aiResponse || ''
-    });
-    
-    setEditModalVisible(true);
+    try {
+      // 获取已保存的计划数据
+      const response = await planAPI.getPlan(savedPlanId);
+      const planData = response.data;
+      
+      // 设置表单初始值
+      editForm.setFieldsValue({
+        planName: planData.planName || `旅行计划_${new Date().toLocaleDateString()}`,
+        destination: planData.destination || '待定',
+        travelType: planData.travelType || '休闲',
+        groupSize: planData.groupSize || 1,
+        budget: planData.budget || null,
+        specialRequirements: planData.specialRequirements || '',
+        dateRange: planData.startDate && planData.endDate ? [
+          dayjs(planData.startDate),
+          dayjs(planData.endDate)
+        ] : null
+      });
+      
+      setEditModalVisible(true);
+    } catch (error) {
+      console.error('获取计划数据失败:', error);
+      message.error('获取计划数据失败，请重试');
+    }
   };
 
   // 提交编辑
@@ -177,8 +214,10 @@ const ChatPage = () => {
         groupSize: values.groupSize,
         travelType: values.travelType,
         specialRequirements: values.specialRequirements,
-        startDate: values.dateRange ? values.dateRange[0].format('YYYY-MM-DD') + 'T00:00:00.000Z' : null,
-        endDate: values.dateRange ? values.dateRange[1].format('YYYY-MM-DD') + 'T23:59:59.999Z' : null,
+        startDate: values.dateRange && values.dateRange[0] ? 
+          values.dateRange[0].format('YYYY-MM-DD') + 'T00:00:00.000Z' : null,
+        endDate: values.dateRange && values.dateRange[1] ? 
+          values.dateRange[1].format('YYYY-MM-DD') + 'T23:59:59.999Z' : null,
       };
       
       console.log('发送的更新数据:', updateData);
@@ -186,6 +225,11 @@ const ChatPage = () => {
       await planAPI.updatePlan(savedPlanId, updateData);
       message.success('计划更新成功！');
       setEditModalVisible(false);
+      
+      // 重新加载计划数据
+      if (planId) {
+        loadPlan();
+      }
       
     } catch (error) {
       console.error('更新计划失败:', error);
@@ -293,6 +337,65 @@ const ChatPage = () => {
                         <div style={{ whiteSpace: 'pre-wrap' }}>
                           {msg.aiResponse}
                         </div>
+                        
+                        {/* 显示提取的字段 */}
+                        {msg.extractedFields && (
+                          <div style={{
+                            marginTop: 12,
+                            padding: '8px 12px',
+                            background: '#e6f7ff',
+                            border: '1px solid #91d5ff',
+                            borderRadius: '6px',
+                            fontSize: '13px'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: 6, color: '#1890ff' }}>
+                              📋 提取的旅行信息
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                              {msg.extractedFields.destination && (
+                                <span style={{ 
+                                  background: '#f0f0f0', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  fontSize: '12px'
+                                }}>
+                                  🏛️ 目的地: {msg.extractedFields.destination}
+                                </span>
+                              )}
+                              {msg.extractedFields.budget && (
+                                <span style={{ 
+                                  background: '#f0f0f0', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  fontSize: '12px'
+                                }}>
+                                  💰 预算: ¥{msg.extractedFields.budget}
+                                </span>
+                              )}
+                              {msg.extractedFields.groupSize && (
+                                <span style={{ 
+                                  background: '#f0f0f0', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  fontSize: '12px'
+                                }}>
+                                  👥 人数: {msg.extractedFields.groupSize}人
+                                </span>
+                              )}
+                              {msg.extractedFields.travelType && (
+                                <span style={{ 
+                                  background: '#f0f0f0', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  fontSize: '12px'
+                                }}>
+                                  🎯 类型: {msg.extractedFields.travelType}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
                         {msg.voiceFileUrl && (
                           <div style={{ marginTop: '8px' }}>
                             <audio controls>
@@ -300,6 +403,19 @@ const ChatPage = () => {
                             </audio>
                           </div>
                         )}
+                        
+                        {/* 显示处理时间 */}
+                        <div style={{ 
+                          fontSize: '12px', 
+                          color: '#999',
+                          marginTop: 4,
+                          textAlign: 'right'
+                        }}>
+                          {msg.processingTime > 0 && (
+                            <span>处理时间: {msg.processingTime}ms</span>
+                          )}
+                        </div>
+                        
                         {/* 保存和编辑按钮 - 只在AI回复后显示 */}
                         {msg.aiResponse && (
                           <div style={{ marginTop: '8px', textAlign: 'right' }}>

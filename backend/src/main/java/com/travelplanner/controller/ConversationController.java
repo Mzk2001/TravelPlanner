@@ -148,8 +148,11 @@ public class ConversationController {
             java.time.LocalDateTime startDate = java.time.LocalDateTime.now().plusDays(7);
             java.time.LocalDateTime endDate = startDate.plusDays(3);
             
-            // 调用TravelPlanService的创建方法
-            TravelPlan createdPlan = travelPlanService.createPlan(
+            // 构建特殊要求字符串（基于提取的字段）
+            String specialRequirements = buildSpecialRequirements(request.getExtractedFields());
+            
+            // 调用TravelPlanService的创建方法（带AI内容）
+            TravelPlan createdPlan = travelPlanService.createPlanWithAi(
                 request.getUserId(),
                 generatePlanName(request.getExtractedFields()),
                 request.getExtractedFields().getDestination(),
@@ -158,6 +161,7 @@ public class ConversationController {
                 request.getExtractedFields().getBudget(),
                 request.getExtractedFields().getTravelType(),
                 request.getExtractedFields().getGroupSize(),
+                specialRequirements,
                 request.getAiResponse()
             );
             
@@ -171,6 +175,34 @@ public class ConversationController {
             return ResponseEntity.badRequest()
                     .body(MapUtils.of("error", "保存计划时发生错误"));
         }
+    }
+    
+    /**
+     * 构建特殊要求字符串
+     */
+    private String buildSpecialRequirements(ExtractedFields fields) {
+        StringBuilder requirements = new StringBuilder();
+        
+        if (fields.getDestination() != null) {
+            requirements.append("目的地: ").append(fields.getDestination()).append("; ");
+        }
+        if (fields.getBudget() != null) {
+            requirements.append("预算: ").append(fields.getBudget()).append("元; ");
+        }
+        if (fields.getGroupSize() != null) {
+            requirements.append("人数: ").append(fields.getGroupSize()).append("人; ");
+        }
+        if (fields.getTravelType() != null) {
+            requirements.append("旅行类型: ").append(fields.getTravelType()).append("; ");
+        }
+        
+        String result = requirements.toString();
+        // 确保不超过1000字符限制
+        if (result.length() > 1000) {
+            result = result.substring(0, 997) + "...";
+        }
+        
+        return result.isEmpty() ? "无特殊要求" : result;
     }
     
     /**
