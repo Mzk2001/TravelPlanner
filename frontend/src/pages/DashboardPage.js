@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, List, Button, Tag, Empty, Spin, message, Modal, Form, Input, DatePicker, InputNumber, Select } from 'antd';
-import { PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { planAPI } from '../services/api';
@@ -64,6 +64,44 @@ const DashboardPage = () => {
     } catch (error) {
       message.error('删除失败');
     }
+  };
+
+  // 百度地图导航功能
+  const openBaiduNavigation = (destination, travelType = 'car') => {
+    if (!destination) {
+      message.warning('目的地信息不完整');
+      return;
+    }
+    
+    // 根据旅行类型选择导航模式
+    let mode = 'driving'; // 默认驾车
+    switch(travelType) {
+      case '休闲':
+      case '商务':
+        mode = 'driving';
+        break;
+      case '探险':
+        mode = 'walking';
+        break;
+      case '文化':
+        mode = 'transit';
+        break;
+      case '美食':
+        mode = 'walking';
+        break;
+      default:
+        mode = 'driving';
+    }
+    
+    // 百度地图Web版URL，自动搜索目的地并开启导航
+    // 参数说明：
+    // destination: 目的地（自动搜索，支持中英文地名）
+    // mode: 导航模式 (driving=驾车, walking=步行, transit=公交, riding=骑行)
+    // region: 搜索范围 (全国搜索)
+    const baiduUrl = `https://map.baidu.com/?newmap=1&ie=utf-8&s=s%26wd%3D${encodeURIComponent(destination)}&mode=${mode}`;
+    
+    // 在新窗口中打开百度地图
+    window.open(baiduUrl, '_blank');
   };
 
   const handleEditSubmit = async (values) => {
@@ -134,6 +172,14 @@ const DashboardPage = () => {
                         onClick={() => handleViewPlan(plan.id)}
                       >
                         查看
+                      </Button>,
+                      <Button 
+                        type="link" 
+                        icon={<EnvironmentOutlined />}
+                        onClick={() => openBaiduNavigation(plan.destination, plan.travelType)}
+                        title="打开百度地图导航"
+                      >
+                        导航
                       </Button>,
                       <Button 
                         type="link" 

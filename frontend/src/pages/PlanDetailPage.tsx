@@ -98,6 +98,44 @@ const PlanDetailPage: React.FC = () => {
     }
   };
 
+  // 百度地图导航功能
+  const openBaiduNavigation = (destination: string, travelType: string = 'car') => {
+    if (!destination) {
+      message.warning('目的地信息不完整');
+      return;
+    }
+    
+    // 根据旅行类型选择导航模式
+    let mode = 'driving'; // 默认驾车
+    switch(travelType) {
+      case '休闲':
+      case '商务':
+        mode = 'driving';
+        break;
+      case '探险':
+        mode = 'walking';
+        break;
+      case '文化':
+        mode = 'transit';
+        break;
+      case '美食':
+        mode = 'walking';
+        break;
+      default:
+        mode = 'driving';
+    }
+    
+    // 百度地图Web版URL，自动搜索目的地并开启导航
+    // 参数说明：
+    // destination: 目的地（自动搜索，支持中英文地名）
+    // mode: 导航模式 (driving=驾车, walking=步行, transit=公交, riding=骑行)
+    // region: 搜索范围 (全国搜索)
+    const baiduUrl = `https://map.baidu.com/?newmap=1&ie=utf-8&s=s%26wd%3D${encodeURIComponent(destination)}&mode=${mode}`;
+    
+    // 在新窗口中打开百度地图
+    window.open(baiduUrl, '_blank');
+  };
+
   const handleEditSubmit = async (values: any) => {
     if (!plan) return;
 
@@ -252,6 +290,13 @@ const PlanDetailPage: React.FC = () => {
                   与AI讨论
                 </Button>
                 <Button 
+                  icon={<EnvironmentOutlined />}
+                  onClick={() => openBaiduNavigation(plan.destination, plan.travelType)}
+                  title="打开百度地图导航"
+                >
+                  地图导航
+                </Button>
+                <Button 
                   icon={<CalculatorOutlined />}
                   onClick={() => navigate(`/plans/${plan.id}/expenses`)}
                 >
@@ -290,6 +335,15 @@ const PlanDetailPage: React.FC = () => {
                   <Space>
                     <EnvironmentOutlined />
                     {plan.destination}
+                    <Button 
+                      type="link" 
+                      size="small"
+                      icon={<EnvironmentOutlined />}
+                      onClick={() => openBaiduNavigation(plan.destination, plan.travelType)}
+                      title="打开百度地图导航"
+                    >
+                      导航
+                    </Button>
                   </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="出行日期">

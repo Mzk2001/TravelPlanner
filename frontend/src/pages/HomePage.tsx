@@ -33,7 +33,7 @@ const HomePage: React.FC = () => {
     {
       icon: <EnvironmentOutlined style={{ fontSize: '24px', color: '#fa8c16' }} />,
       title: '地图服务',
-      description: '集成高德地图，提供地点搜索、路线规划等服务',
+      description: '集成百度地图，提供地点搜索、路线规划等服务',
       action: () => navigate('/chat')
     },
     {

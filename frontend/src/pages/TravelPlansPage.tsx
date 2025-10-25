@@ -25,7 +25,8 @@ import {
   EyeOutlined,
   CalendarOutlined,
   DollarOutlined,
-  TeamOutlined
+  TeamOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -94,6 +95,20 @@ const TravelPlansPage: React.FC = () => {
     } catch (error) {
       message.error('删除失败');
     }
+  };
+
+  // 百度地图导航功能
+  const openBaiduNavigation = (destination: string) => {
+    if (!destination) {
+      message.warning('目的地信息不完整');
+      return;
+    }
+    
+    // 百度地图Web版URL，自动搜索目的地
+    const baiduUrl = `https://map.baidu.com/?newmap=1&ie=utf-8&s=s%26wd%3D${encodeURIComponent(destination)}&mode=driving`;
+    
+    // 在新窗口中打开百度地图
+    window.open(baiduUrl, '_blank');
   };
 
   const handleSubmit = async (values: any) => {
@@ -185,6 +200,14 @@ const TravelPlansPage: React.FC = () => {
             onClick={() => navigate(`/plans/${record.id}`)}
           >
             查看
+          </Button>
+          <Button 
+            type="text" 
+            icon={<EnvironmentOutlined />}
+            onClick={() => openBaiduNavigation(record.destination)}
+            title="打开百度地图导航"
+          >
+            导航
           </Button>
           <Button 
             type="text" 
