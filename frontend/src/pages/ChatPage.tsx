@@ -25,11 +25,14 @@ import {
   AudioMutedOutlined,
   FileOutlined,
   SaveOutlined,
-  EditOutlined
+  EditOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 import { Conversation, ChatRequest, ChatResponse, TravelPlan, ExtractedFields } from '../types';
+import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
+import VoiceConfigModal from '../components/VoiceConfigModal';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -44,11 +47,23 @@ const ChatPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | undefined>();
   const [plans, setPlans] = useState<TravelPlan[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingConversation, setEditingConversation] = useState<Conversation | null>(null);
   const [savedPlanId, setSavedPlanId] = useState<number | null>(null);
+  const [voiceConfigVisible, setVoiceConfigVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 语音录制Hook
+  const {
+    isRecording,
+    isProcessing,
+    error: voiceError,
+    transcript,
+    startRecording,
+    stopRecording,
+    clearError: clearVoiceError,
+    clearTranscript
+  } = useVoiceRecorder();
 
   useEffect(() => {
     if (user) {
@@ -68,6 +83,26 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [conversations]);
+
+  // 处理语音识别结果
+  useEffect(() => {
+    if (transcript) {
+      setMessage(transcript);
+      clearTranscript();
+      // 自动发送语音识别的消息
+      setTimeout(() => {
+        handleSendMessage();
+      }, 500); // 延迟500ms确保状态更新完成
+    }
+  }, [transcript, clearTranscript]);
+
+  // 处理语音错误
+  useEffect(() => {
+    if (voiceError) {
+      antdMessage.error(voiceError);
+      clearVoiceError();
+    }
+  }, [voiceError, clearVoiceError]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -215,11 +250,11 @@ const ChatPage: React.FC = () => {
   const handleVoiceRecord = () => {
     if (!user) return;
     
-    setIsRecording(true);
-    // 这里应该实现语音录制功能
-    // 由于浏览器API限制，这里只是示例
-    antdMessage.info('语音录制功能需要用户授权，请使用文本输入');
-    setTimeout(() => setIsRecording(false), 2000);
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   const handleFileUpload = (file: File) => {
@@ -597,6 +632,25 @@ const ChatPage: React.FC = () => {
                 borderTop: '1px solid #f0f0f0',
                 padding: '16px 0 0 0'
               }}>
+                {/* 语音状态显示 */}
+                {(isRecording || isProcessing) && (
+                  <div style={{ 
+                    marginBottom: '12px',
+                    padding: '8px 12px',
+                    background: isRecording ? '#fff2e8' : '#f6ffed',
+                    border: `1px solid ${isRecording ? '#ffd591' : '#b7eb8f'}`,
+                    borderRadius: '6px',
+                    textAlign: 'center'
+                  }}>
+                    <Space>
+                      <AudioOutlined style={{ color: isRecording ? '#fa8c16' : '#52c41a' }} />
+                      <Text style={{ color: isRecording ? '#fa8c16' : '#52c41a' }}>
+                        {isRecording ? '正在录音...' : '正在识别语音...'}
+                      </Text>
+                    </Space>
+                  </div>
+                )}
+                
                 <Space.Compact style={{ width: '100%' }}>
                   <TextArea
                     value={message}
@@ -604,14 +658,26 @@ const ChatPage: React.FC = () => {
                     onKeyPress={handleKeyPress}
                     placeholder="输入您的问题或需求..."
                     autoSize={{ minRows: 1, maxRows: 4 }}
-                    disabled={loading}
+                    disabled={loading || isProcessing}
                     style={{ flex: 1 }}
                   />
-                  <Tooltip title="语音输入">
+                  <Tooltip title={isRecording ? "停止录音" : "开始录音"}>
                     <Button
                       icon={isRecording ? <AudioMutedOutlined /> : <AudioOutlined />}
                       onClick={handleVoiceRecord}
-                      disabled={loading}
+                      disabled={loading || isProcessing}
+                      type={isRecording ? "primary" : "default"}
+                      style={{ 
+                        background: isRecording ? '#ff4d4f' : undefined,
+                        borderColor: isRecording ? '#ff4d4f' : undefined
+                      }}
+                    />
+                  </Tooltip>
+                  <Tooltip title="语音配置">
+                    <Button
+                      icon={<SettingOutlined />}
+                      onClick={() => setVoiceConfigVisible(true)}
+                      disabled={loading || isProcessing}
                     />
                   </Tooltip>
                   <Upload
@@ -622,7 +688,7 @@ const ChatPage: React.FC = () => {
                     <Tooltip title="上传音频文件">
                       <Button
                         icon={<FileOutlined />}
-                        disabled={loading}
+                        disabled={loading || isProcessing}
                       />
                     </Tooltip>
                   </Upload>
@@ -631,7 +697,7 @@ const ChatPage: React.FC = () => {
                     icon={<SendOutlined />}
                     onClick={handleSendMessage}
                     loading={loading}
-                    disabled={!message.trim()}
+                    disabled={!message.trim() || isProcessing}
                   >
                     发送
                   </Button>
@@ -681,6 +747,16 @@ const ChatPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 语音配置模态框 */}
+      <VoiceConfigModal
+        visible={voiceConfigVisible}
+        onCancel={() => setVoiceConfigVisible(false)}
+        onSave={() => {
+          setVoiceConfigVisible(false);
+          antdMessage.success('语音配置已保存，现在可以使用语音输入功能了！');
+        }}
+      />
     </div>
   );
 };

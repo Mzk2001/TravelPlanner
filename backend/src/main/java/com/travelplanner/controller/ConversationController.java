@@ -302,6 +302,38 @@ public class ConversationController {
     }
     
     /**
+     * 语音识别API
+     * 
+     * @param audioFile 音频文件
+     * @return 识别结果
+     */
+    @PostMapping("/voice-recognition")
+    public ResponseEntity<?> voiceRecognition(@RequestParam("audio") MultipartFile audioFile) {
+        try {
+            log.info("收到语音识别请求，文件大小: {} bytes", audioFile.getSize());
+            
+            // 语音转文字
+            byte[] audioData = audioFile.getBytes();
+            String transcript = aiService.speechToText(audioData);
+            
+            if (transcript == null || transcript.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(MapUtils.of("success", false, "message", "语音识别失败"));
+            }
+            
+            return ResponseEntity.ok(MapUtils.of(
+                "success", true,
+                "transcript", transcript
+            ));
+            
+        } catch (Exception e) {
+            log.error("语音识别失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(MapUtils.of("success", false, "message", "语音识别失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * 获取对话历史
      * 
      * @param userId 用户ID

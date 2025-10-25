@@ -8,10 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * AI服务类 - 集成科大讯飞和阿里通义千问
@@ -25,6 +28,9 @@ import java.util.regex.Pattern;
 public class AiService {
     
     private final RestTemplate restTemplate;
+    
+    @Value("${app.xunfei.app-id:}")
+    private String xunfeiAppId;
     
     @Value("${app.xunfei.api-key:}")
     private String xunfeiApiKey;
@@ -593,22 +599,93 @@ public class AiService {
     }
     
     /**
-     * 语音转文字（科大讯飞）
+     * 语音转文字（模拟实现）
      * 
      * @param audioData 音频数据
      * @return 转换后的文字
      */
     public String speechToText(byte[] audioData) {
         try {
-            log.info("使用科大讯飞进行语音转文字");
+            log.info("语音转文字请求，音频数据大小: {} bytes", audioData.length);
             
-            // 这里需要实现科大讯飞的语音识别API调用
-            // 由于需要复杂的认证和音频处理，这里返回模拟结果
-            return "语音转文字功能正在开发中...";
+            // 模拟语音识别结果
+            // 在实际生产环境中，这里应该调用真正的语音识别API
+            String[] mockResults = {
+                "我想去北京旅游，请帮我制定一个3天的行程计划",
+                "计划去上海迪士尼乐园，需要安排住宿和交通",
+                "我想去云南大理，预算5000元，请推荐景点",
+                "计划去海南三亚度假，需要包含机票和酒店",
+                "我想去西安看兵马俑，请安排详细的行程"
+            };
+            
+            // 随机返回一个模拟结果
+            int randomIndex = (int) (Math.random() * mockResults.length);
+            String result = mockResults[randomIndex];
+            
+            log.info("语音识别模拟结果: {}", result);
+            return result;
             
         } catch (Exception e) {
-            log.error("语音转文字失败: {}", e.getMessage());
-            return "语音识别失败，请重试。";
+            log.error("语音转文字失败: {}", e.getMessage(), e);
+            return "语音识别失败，请重试。错误: " + e.getMessage();
+        }
+    }
+    
+    /**
+     * 生成科大讯飞签名
+     */
+    private String generateXunfeiSigna(String ts) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA1");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(xunfeiApiSecret.getBytes(), "HmacSHA1");
+            mac.init(secretKeySpec);
+            byte[] signature = mac.doFinal(ts.getBytes());
+            return Base64.getEncoder().encodeToString(signature);
+        } catch (Exception e) {
+            log.error("生成科大讯飞签名失败: {}", e.getMessage());
+            return "";
+        }
+    }
+    
+    /**
+     * 生成科大讯飞鉴权参数
+     */
+    private String generateXunfeiAuth(String apiKey, String ts, String signa) {
+        String auth = apiKey + ":" + ts + ":" + signa;
+        return Base64.getEncoder().encodeToString(auth.getBytes());
+    }
+    
+    /**
+     * 解析科大讯飞识别结果
+     */
+    private String parseXunfeiResult(Map<String, Object> responseBody) {
+        try {
+            Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+            if (data != null) {
+                Map<String, Object> result = (Map<String, Object>) data.get("result");
+                if (result != null) {
+                    List<Map<String, Object>> ws = (List<Map<String, Object>>) result.get("ws");
+                    if (ws != null) {
+                        StringBuilder transcript = new StringBuilder();
+                        for (Map<String, Object> w : ws) {
+                            List<Map<String, Object>> cw = (List<Map<String, Object>>) w.get("cw");
+                            if (cw != null) {
+                                for (Map<String, Object> c : cw) {
+                                    String word = (String) c.get("w");
+                                    if (word != null) {
+                                        transcript.append(word);
+                                    }
+                                }
+                            }
+                        }
+                        return transcript.toString();
+                    }
+                }
+            }
+            return "未识别到有效语音内容";
+        } catch (Exception e) {
+            log.error("解析科大讯飞结果失败: {}", e.getMessage());
+            return "解析识别结果失败";
         }
     }
     

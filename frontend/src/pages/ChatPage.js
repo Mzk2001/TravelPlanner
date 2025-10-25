@@ -4,6 +4,8 @@ import { SendOutlined, AudioOutlined, UserOutlined, RobotOutlined, SaveOutlined,
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { conversationAPI, planAPI } from '../services/api';
+import VoiceRecorder from '../components/VoiceRecorder';
+import useVoiceRecognition from '../hooks/useVoiceRecognition';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -17,6 +19,20 @@ const ChatPage = () => {
   const messagesEndRef = useRef(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState(null);
+  const [voiceRecorderVisible, setVoiceRecorderVisible] = useState(false);
+  
+  // 语音识别Hook
+  const {
+    isRecording: isVoiceRecording,
+    isProcessing: isVoiceProcessing,
+    error: voiceError,
+    transcript,
+    interimTranscript,
+    startRecording: startVoiceRecording,
+    stopRecording: stopVoiceRecording,
+    clearError: clearVoiceError,
+    clearTranscript
+  } = useVoiceRecognition();
   
   const { planId } = useParams();
   const navigate = useNavigate();
@@ -32,6 +48,30 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 处理语音识别结果
+  useEffect(() => {
+    if (transcript) {
+      // 将语音识别结果设置到表单中
+      form.setFieldsValue({ message: transcript });
+    }
+  }, [transcript, form]);
+
+  // 处理实时语音识别结果
+  useEffect(() => {
+    if (interimTranscript) {
+      // 显示实时识别结果
+      form.setFieldsValue({ message: transcript + interimTranscript });
+    }
+  }, [interimTranscript, transcript, form]);
+
+  // 处理语音错误
+  useEffect(() => {
+    if (voiceError) {
+      message.error(voiceError);
+      clearVoiceError();
+    }
+  }, [voiceError, clearVoiceError]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -274,6 +314,27 @@ const ChatPage = () => {
     }
   };
 
+  // 处理语音录制完成
+  const handleVoiceRecordingComplete = (audioBlob) => {
+    handleVoiceMessage(audioBlob);
+  };
+
+  // 处理语音录制取消
+  const handleVoiceRecordingCancel = () => {
+    setVoiceRecorderVisible(false);
+  };
+
+  // 语音识别处理
+  const handleVoiceRecognition = () => {
+    if (!user) return;
+    
+    if (isVoiceRecording) {
+      stopVoiceRecording();
+    } else {
+      startVoiceRecording();
+    }
+  };
+
   return (
     <div style={{ height: 'calc(100vh - 120px)' }}>
       <Card 
@@ -478,7 +539,35 @@ const ChatPage = () => {
             >
               发送
             </Button>
+            <Button 
+              type={isVoiceRecording ? "primary" : "default"}
+              icon={<AudioOutlined />}
+              onClick={handleVoiceRecognition}
+              disabled={loading}
+              style={{ 
+                backgroundColor: isVoiceRecording ? '#ff4d4f' : undefined,
+                color: isVoiceRecording ? 'white' : undefined,
+                borderColor: isVoiceRecording ? '#ff4d4f' : undefined
+              }}
+            >
+              {isVoiceRecording ? '停止录音' : '语音识别'}
+            </Button>
           </div>
+          
+          {/* 语音识别状态显示 */}
+          {isVoiceRecording && (
+            <div style={{ 
+              marginTop: '8px',
+              padding: '8px 12px', 
+              backgroundColor: '#fff2f0', 
+              border: '1px solid #ffccc7', 
+              borderRadius: '6px',
+              fontSize: '14px',
+              color: '#ff4d4f'
+            }}>
+              🎤 正在录音中... {interimTranscript && `"${interimTranscript}"`}
+            </div>
+          )}
         </Form>
       </Card>
 
@@ -587,6 +676,14 @@ const ChatPage = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 语音录制模态框 */}
+      <VoiceRecorder
+        visible={voiceRecorderVisible}
+        onRecordingComplete={handleVoiceRecordingComplete}
+        onCancel={handleVoiceRecordingCancel}
+        onClose={() => setVoiceRecorderVisible(false)}
+      />
     </div>
   );
 };
