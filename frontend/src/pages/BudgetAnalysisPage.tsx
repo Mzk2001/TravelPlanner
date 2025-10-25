@@ -26,6 +26,18 @@ const BudgetAnalysisPage: React.FC = () => {
       console.log('Loading budget analysis for planId:', planId);
       const data = await apiService.getBudgetAnalysis(Number(planId));
       console.log('Budget analysis data:', data);
+      console.log('Data structure check:', {
+        hasTotalBudget: 'totalBudget' in data,
+        hasTotalExpense: 'totalExpense' in data,
+        hasRemainingBudget: 'remainingBudget' in data,
+        hasBudgetUtilization: 'budgetUtilization' in data,
+        hasAiAnalysis: 'aiAnalysis' in data,
+        hasHasAiAnalysis: 'hasAiAnalysis' in data,
+        totalBudgetValue: data.totalBudget,
+        totalExpenseValue: data.totalExpense,
+        remainingBudgetValue: data.remainingBudget,
+        budgetUtilizationValue: data.budgetUtilization
+      });
       setAnalysis(data);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || '加载预算分析失败';
@@ -103,13 +115,13 @@ const BudgetAnalysisPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
           <div style={{ textAlign: 'center', margin: '10px' }}>
             <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
-              {analysis.totalBudget}元
+              {typeof analysis.totalBudget === 'number' ? analysis.totalBudget.toFixed(2) : analysis.totalBudget}元
             </div>
             <div style={{ color: '#666' }}>总预算</div>
           </div>
           <div style={{ textAlign: 'center', margin: '10px' }}>
             <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f5222d' }}>
-              {analysis.totalExpense}元
+              {typeof analysis.totalExpense === 'number' ? analysis.totalExpense.toFixed(2) : analysis.totalExpense}元
             </div>
             <div style={{ color: '#666' }}>已支出</div>
           </div>
@@ -117,9 +129,9 @@ const BudgetAnalysisPage: React.FC = () => {
             <div style={{ 
               fontSize: '24px', 
               fontWeight: 'bold', 
-              color: analysis.remainingBudget >= 0 ? '#52c41a' : '#f5222d' 
+              color: (typeof analysis.remainingBudget === 'number' ? analysis.remainingBudget : parseFloat(analysis.remainingBudget)) >= 0 ? '#52c41a' : '#f5222d' 
             }}>
-              {analysis.remainingBudget}元
+              {typeof analysis.remainingBudget === 'number' ? analysis.remainingBudget.toFixed(2) : analysis.remainingBudget}元
             </div>
             <div style={{ color: '#666' }}>剩余预算</div>
           </div>
@@ -127,9 +139,9 @@ const BudgetAnalysisPage: React.FC = () => {
             <div style={{ 
               fontSize: '24px', 
               fontWeight: 'bold', 
-              color: analysis.budgetUtilization > 100 ? '#f5222d' : '#1890ff' 
+              color: (typeof analysis.budgetUtilization === 'number' ? analysis.budgetUtilization : parseFloat(analysis.budgetUtilization)) > 100 ? '#f5222d' : '#1890ff' 
             }}>
-              {Math.round(analysis.budgetUtilization)}%
+              {typeof analysis.budgetUtilization === 'number' ? Math.round(analysis.budgetUtilization) : Math.round(parseFloat(analysis.budgetUtilization))}%
             </div>
             <div style={{ color: '#666' }}>预算使用率</div>
           </div>

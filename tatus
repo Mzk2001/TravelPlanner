@@ -1,0 +1,5 @@
+[33m6fd8b33[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m feat: 完善旅行规划系统功能
+[33m62ff18b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: 完善AI聊天功能和旅行计划管理
+[33md853dea[m feat: 添加字段提取测试功能
+[33m76b0aac[m fix: 修复特殊要求字段显示AI内容的问题
+[33m26507ac[m feat: 添加桩程序模式替代通义千问API调用

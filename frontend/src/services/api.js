@@ -137,8 +137,26 @@ export const expenseAPI = {
   getExpenseSummary: (planId) => 
     api.get(`/expenses/plans/${planId}/budget-analysis`),
   
-  getBudgetAnalysis: (planId) => 
-    api.get(`/expenses/plans/${planId}/budget-analysis`),
+  getBudgetAnalysis: async (planId) => {
+    try {
+      console.log('Calling budget analysis API for planId:', planId);
+      const response = await api.get(`/expenses/plans/${planId}/budget-analysis`);
+      console.log('Budget analysis API response:', response.data);
+      
+      // 检查响应结构
+      if (response.data && response.data.data) {
+        return response.data.data;
+      } else if (response.data) {
+        // 如果直接返回数据，没有包装在data字段中
+        return response.data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Budget analysis API error:', error);
+      throw error;
+    }
+  },
 };
 
 // 默认导出包含所有API方法的对象
