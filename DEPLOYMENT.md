@@ -1,20 +1,20 @@
-# TravelPlanner SQLite部署指南
+# TravelPlanner H2部署指南
 
 ## 🎯 项目改造总结
 
-本项目已从PostgreSQL/H2数据库改造为SQLite内嵌数据库，实现单容器部署，助教检查作业时只需Docker镜像即可。
+本项目使用H2内存数据库，实现单容器部署，助教检查作业时只需Docker镜像即可。
 
-## 📋 主要更改
+## 📋 主要特性
 
-### 1. 数据库配置更改
-- **pom.xml**: 移除H2依赖，添加SQLite依赖
-- **application.yml**: 配置SQLite数据库连接
-- **data.sql**: 适配SQLite语法
+### 1. 数据库配置
+- **H2内存数据库**: 应用启动时自动创建，无需外部数据库
+- **零配置**: 无需安装和配置数据库服务器
+- **轻量级**: 适合小型应用和演示
 
 ### 2. Docker配置
-- **Dockerfile**: 创建支持SQLite的Docker镜像
-- **docker-compose.yml**: 单容器部署配置
+- **单容器部署**: 后端服务包含所有依赖
 - **构建脚本**: 提供一键构建脚本
+- **健康检查**: 自动检测服务状态
 
 ### 3. 文档更新
 - **README.md**: 更新部署说明
@@ -62,10 +62,11 @@ docker-compose up -d
 
 ## 🔧 配置说明
 
-### SQLite数据库
-- **数据库文件**: `backend/data/travel_planner.db`
-- **数据持久化**: 通过Docker volume挂载
+### H2数据库
+- **数据库类型**: H2内存数据库
+- **数据持久化**: 重启后数据会重置（适合演示）
 - **初始化数据**: 自动创建测试用户
+- **控制台访问**: http://localhost:8080/api/h2-console
 
 ### 测试用户
 - **用户名**: `test`
@@ -83,11 +84,12 @@ docker-compose up -d
 - `users`: 用户信息表
 - `travel_plans`: 旅游计划表
 - `conversations`: 对话记录表
+- `expenses`: 费用记录表
 
-### 数据持久化
-- SQLite数据库文件存储在Docker volume中
-- 容器重启后数据不会丢失
-- 支持数据备份和恢复
+### 数据管理
+- H2数据库是内存数据库，重启后数据会重置
+- 如需持久化数据，可以修改application.yml使用文件模式
+- 支持通过H2控制台查看和管理数据
 
 ## 🛠️ 开发说明
 
@@ -105,22 +107,25 @@ npm run dev
 
 ### 数据库管理
 ```bash
-# 查看数据库文件
-ls backend/data/
+# H2数据库是内存数据库，重启后数据会重置
+# 如需持久化数据，可以：
+# 1. 修改application.yml使用文件模式
+# 2. 定期导出数据到SQL文件
+# 3. 使用数据库迁移工具
 
-# 备份数据库
-cp backend/data/travel_planner.db backup/
-
-# 恢复数据库
-cp backup/travel_planner.db backend/data/
+# 导出数据（开发环境）
+# 访问 http://localhost:8080/api/h2-console
+# 用户名: sa, 密码: (空)
+# 执行SQL导出数据
 ```
 
 ## 🐛 故障排除
 
 ### 常见问题
 1. **Docker构建失败**: 检查Maven依赖是否正确下载
-2. **数据库连接失败**: 检查SQLite文件权限
+2. **端口冲突**: 检查8080端口是否被占用
 3. **应用启动失败**: 查看Docker日志
+4. **H2数据库问题**: 确认H2依赖正确配置
 
 ### 日志查看
 ```bash
@@ -133,24 +138,25 @@ docker-compose ps
 
 ## 📦 部署优势
 
-### SQLite优势
+### H2数据库优势
 - **零配置**: 无需安装数据库服务器
-- **便携性**: 数据库文件可随应用分发
+- **内存模式**: 启动快速，适合开发和测试
 - **轻量级**: 适合小型应用和演示
 - **Docker友好**: 单容器部署
+- **自动初始化**: 支持SQL脚本自动执行
 
 ### 助教检查便利性
 - **一键部署**: 只需Docker和Docker Compose
 - **无外部依赖**: 不需要安装数据库
-- **数据持久化**: 重启后数据不丢失
+- **快速启动**: 内存数据库启动迅速
 - **完整功能**: 包含所有业务功能
 
 ## 🔄 版本控制
 
 ### 文件更改清单
-- `backend/pom.xml` - 添加SQLite依赖
-- `backend/src/main/resources/application.yml` - SQLite配置
-- `backend/src/main/resources/data.sql` - SQLite语法适配
+- `backend/pom.xml` - 使用H2数据库依赖
+- `backend/src/main/resources/application.yml` - H2数据库配置
+- `backend/src/main/resources/data.sql` - 初始化数据
 - `backend/Dockerfile` - Docker镜像配置
 - `docker-compose.yml` - 服务编排
 - `build-docker.sh` - Linux/Mac构建脚本

@@ -774,7 +774,7 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-    "amapApiKey": "your_amap_api_key",
+    "baiduApiKey": "your_baidu_api_key",
     "xunfeiAppId": "your_xunfei_app_id",
     "xunfeiApiKey": "your_xunfei_api_key",
     "xunfeiApiSecret": "your_xunfei_api_secret",

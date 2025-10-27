@@ -2,7 +2,7 @@
 
 ## 🎯 项目概述
 
-这是一个基于Spring Boot + React的智能旅游规划平台，集成了AI大语言模型（通义千问）和地图服务（高德地图），为用户提供个性化的旅游计划生成服务。
+这是一个基于Spring Boot + React的智能旅游规划平台，集成了AI大语言模型（通义千问）和地图服务（百度地图），为用户提供个性化的旅游计划生成服务。
 
 ## ✨ 主要功能
 
@@ -47,7 +47,7 @@
 ### 第三方服务
 - **AI服务**: 阿里通义千问
 - **语音服务**: 科大讯飞
-- **地图服务**: 高德地图API
+- **地图服务**: 百度地图API
 
 ## 📁 项目结构
 
@@ -141,8 +141,8 @@ npm start
 在`.env`文件中配置以下API密钥：
 
 ```env
-# 高德地图API
-AMAP_API_KEY=your_amap_api_key
+# 百度地图API
+BAIDU_API_KEY=your_baidu_api_key
 
 # 科大讯飞API
 XUNFEI_APP_ID=your_xunfei_app_id
@@ -261,6 +261,6 @@ npm test
 - Ant Design
 - 阿里通义千问
 - 科大讯飞
-- 高德地图
+- 百度地图
 
 

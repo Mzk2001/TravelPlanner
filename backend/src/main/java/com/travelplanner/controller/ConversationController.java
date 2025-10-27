@@ -2,7 +2,6 @@ package com.travelplanner.controller;
 
 import com.travelplanner.service.AiService;
 import com.travelplanner.service.ConversationService;
-import com.travelplanner.service.MapService;
 import com.travelplanner.service.TravelPlanService;
 import com.travelplanner.entity.TravelPlan;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Optional;
 import com.travelplanner.util.MapUtils;
 import com.travelplanner.entity.Conversation;
@@ -36,7 +34,6 @@ public class ConversationController {
     
     private final ConversationService conversationService;
     private final AiService aiService;
-    private final MapService mapService;
     private final TravelPlanService travelPlanService;
     
     /**
@@ -403,69 +400,6 @@ public class ConversationController {
             return ResponseEntity.badRequest()
                     .body(MapUtils.of("error", "删除对话记录失败"));
         }
-    }
-    
-    /**
-     * 搜索地点
-     * 
-     * @param keyword 搜索关键词
-     * @param city 城市（可选）
-     * @return 搜索结果
-     */
-    @GetMapping("/search/places")
-    public ResponseEntity<?> searchPlaces(@RequestParam String keyword,
-                                        @RequestParam(required = false) String city) {
-        try {
-            log.info("搜索地点: keyword={}, city={}", keyword, city);
-            
-            Map<String, Object> result = mapService.searchPlace(keyword, city);
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            log.error("搜索地点失败: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(MapUtils.of("error", "搜索地点失败"));
-        }
-    }
-    
-    /**
-     * 获取地点详情
-     * 
-     * @param placeId 地点ID
-     * @return 地点详情
-     */
-    @GetMapping("/places/{placeId}")
-    public ResponseEntity<?> getPlaceDetail(@PathVariable String placeId) {
-        try {
-            log.info("获取地点详情: placeId={}", placeId);
-            
-            Map<String, Object> result = mapService.getPlaceDetail(placeId);
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            log.error("获取地点详情失败: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(MapUtils.of("error", "获取地点详情失败"));
-        }
-    }
-    
-    /**
-     * 判断AI回复是否为旅游计划生成
-     */
-    private boolean isTravelPlanGenerated(String aiResponse) {
-        if (aiResponse == null || aiResponse.trim().isEmpty()) {
-            return false;
-        }
-        
-        // 检查是否包含旅游计划的关键词
-        String response = aiResponse.toLowerCase();
-        return response.contains("旅游计划") || 
-               response.contains("行程安排") || 
-               response.contains("住宿建议") || 
-               response.contains("美食推荐") || 
-               response.contains("预算估算") ||
-               response.contains("景点推荐") ||
-               response.contains("交通建议");
     }
     
     /**

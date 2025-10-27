@@ -52,10 +52,6 @@ app:
     secret: 1c3f5a7b9d2e4f6081a3b5c7d9e0f1a21c3f5a7b9d2e4f6081a3b5c7d9e0f1a2
     expiration: 3600000 # 1小时
     
-  # 高德地图API配置
-  amap:
-    api-key: test_amap_key
-    base-url: https://restapi.amap.com/v3
     
   # 科大讯飞API配置
   xunfei:

@@ -57,10 +57,6 @@ app:
     secret: ${JWT_SECRET:travelplanner-secret-key-2024-very-secure-jwt-token-for-hs512-algorithm-must-be-at-least-512-bits-long}
     expiration: 86400000 # 24小时
     
-  # 高德地图API配置
-  amap:
-    api-key: ${AMAP_API_KEY:your_amap_api_key}
-    base-url: https://restapi.amap.com/v3
     
   # 科大讯飞API配置
   # 请访问 https://www.xfyun.cn/ 获取API密钥
@@ -69,9 +65,9 @@ app:
   # 3. 获取APPID、API Key、API Secret
   # 4. 替换下面的配置值或设置环境变量
   xunfei:
-    app-id: ${XUNFEI_APP_ID:f11be994}  # 您的APPID
-    api-key: ${XUNFEI_API_KEY:9d3a050b12dac4d762b2a85eea4aaaf2}  # 您的API Key
-    api-secret: ${XUNFEI_API_SECRET:ZDk5NWY4NjE5YTk1YTU1YzQ3OTU0YzNj}  # 您的API Secret
+    app-id: ${XUNFEI_APP_ID:your_xunfei_app_id}  # 您的APPID
+    api-key: ${XUNFEI_API_KEY:your_xunfei_api_key}  # 您的API Key
+    api-secret: ${XUNFEI_API_SECRET:your_xunfei_api_secret}  # 您的API Secret
     base-url: https://api.xf-yun.com/v1/private
     
   # 阿里通义千问API配置

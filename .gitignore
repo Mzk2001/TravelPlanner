@@ -32,4 +32,11 @@ target/
 # Docker
 docker-compose.override.yml
 
+# Node.js (if accidentally created in backend)
+node_modules/
+package.json
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 

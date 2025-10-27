@@ -8,11 +8,11 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # 持久化SQLite数据库文件
+      # 持久化H2数据库文件（如果使用文件模式）
       - ./backend/data:/app/data
     environment:
       - SPRING_PROFILES_ACTIVE=default
-      - JWT_SECRET=travelplanner-secret-key-2024
+      - JWT_SECRET=${JWT_SECRET:-travelplanner-secret-key-2024}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
