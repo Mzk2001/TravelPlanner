@@ -65,7 +65,14 @@ public class ConversationController {
             }
             
             // 提取旅行字段
-            AiService.ExtractedFields extractedFields = aiService.extractTravelFields(request.getMessage());
+            AiService.ExtractedFields extractedFields;
+            if (request.getApiKey() != null && !request.getApiKey().trim().isEmpty()) {
+                // 使用自定义API Key提取字段
+                extractedFields = aiService.extractFieldsWithCustomKey(request.getApiKey(), request.getMessage());
+            } else {
+                // 使用用户特定的API Key或默认API Key
+                extractedFields = aiService.extractTravelFields(request.getUserId(), request.getMessage());
+            }
             log.info("提取的字段: destination={}, budget={}, groupSize={}, travelType={}", 
                 extractedFields.getDestination(), extractedFields.getBudget(), 
                 extractedFields.getGroupSize(), extractedFields.getTravelType());
@@ -80,8 +87,8 @@ public class ConversationController {
                     planContext
                 );
             } else {
-                // 使用默认API Key
-                aiResponse = aiService.generateTravelPlan(request.getMessage(), planContext);
+                // 使用用户特定的API Key或默认API Key
+                aiResponse = aiService.generateTravelPlan(request.getUserId(), request.getMessage(), planContext);
             }
             
             long processingTime = System.currentTimeMillis() - startTime;

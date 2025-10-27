@@ -1,69 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Space, Typography, Divider, Alert, Row, Col, Tag } from 'antd';
-import { SettingOutlined, KeyOutlined, ExperimentOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Card, Button, Space, Typography, Divider, Alert, Row, Col, Tag, message } from 'antd';
+import { SettingOutlined, KeyOutlined } from '@ant-design/icons';
 import ApiKeyConfig from '../components/ApiKeyConfig';
-import ApiKeyTest from '../components/ApiKeyTest';
+import { useAuth } from '../contexts/AuthContext';
+import apiService from '../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
 const SettingsPage: React.FC = () => {
+  const { user } = useAuth();
   const [apiKeyModalVisible, setApiKeyModalVisible] = useState(false);
   const [currentApiKey, setCurrentApiKey] = useState<string>('');
-  const [apiKeyStatus, setApiKeyStatus] = useState<'none' | 'configured' | 'testing' | 'valid' | 'invalid'>('none');
+  const [apiKeyStatus, setApiKeyStatus] = useState<'none' | 'configured'>('none');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 从本地存储获取API Key
-    const savedApiKey = localStorage.getItem('qwen_api_key');
-    if (savedApiKey) {
-      setCurrentApiKey(savedApiKey);
-      setApiKeyStatus('configured');
+    // 从后端获取API Key状态
+    if (user?.id) {
+      loadApiKeyStatus();
     }
-  }, []);
+  }, [user]);
 
-  const handleSaveApiKey = async (apiKey: string) => {
-    // 保存到本地存储
-    localStorage.setItem('qwen_api_key', apiKey);
-    setCurrentApiKey(apiKey);
-    setApiKeyStatus('configured');
+  const loadApiKeyStatus = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await apiService.getApiKeyStatus(user.id);
+      if (response.success) {
+        if (response.hasApiKey) {
+          setCurrentApiKey(response.maskedApiKey || '');
+          setApiKeyStatus('configured');
+        } else {
+          setCurrentApiKey('');
+          setApiKeyStatus('none');
+        }
+      }
+    } catch (error) {
+      console.error('获取API Key状态失败:', error);
+      setApiKeyStatus('none');
+    }
   };
 
-  const handleTestApiKey = async () => {
-    if (!currentApiKey) {
+  const handleSaveApiKey = async (apiKey: string) => {
+    if (!user?.id) {
+      message.error('用户信息获取失败');
       return;
     }
 
-    setApiKeyStatus('testing');
+    setLoading(true);
     try {
-      // 直接调用后端API测试
-      const response = await fetch('http://localhost:8080/api/ai/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ apiKey: currentApiKey })
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setApiKeyStatus('valid');
+      const response = await apiService.saveApiKey(user.id, apiKey);
+      if (response.success) {
+        // 保存成功后重新加载API Key状态，确保数据一致性
+        await loadApiKeyStatus();
+        message.success('API Key保存成功！');
       } else {
-        setApiKeyStatus('invalid');
+        message.error(response.message || '保存失败');
       }
-    } catch (error) {
-      setApiKeyStatus('invalid');
+    } catch (error: any) {
+      console.error('保存API Key失败:', error);
+      message.error('保存失败，请重试');
+    } finally {
+      setLoading(false);
     }
   };
+
 
   const getApiKeyStatusTag = () => {
     switch (apiKeyStatus) {
       case 'configured':
         return <Tag color="blue">已配置</Tag>;
-      case 'testing':
-        return <Tag color="orange">测试中</Tag>;
-      case 'valid':
-        return <Tag color="green" icon={<CheckCircleOutlined />}>验证成功</Tag>;
-      case 'invalid':
-        return <Tag color="red">验证失败</Tag>;
       default:
         return <Tag color="default">未配置</Tag>;
     }
@@ -92,7 +98,6 @@ const SettingsPage: React.FC = () => {
                 </Paragraph>
               </div>
 
-              <ApiKeyTest />
 
               {currentApiKey ? (
                 <Alert
@@ -107,13 +112,6 @@ const SettingsPage: React.FC = () => {
                           onClick={() => setApiKeyModalVisible(true)}
                         >
                           重新配置
-                        </Button>
-                        <Button 
-                          icon={<ExperimentOutlined />}
-                          onClick={handleTestApiKey}
-                          loading={apiKeyStatus === 'testing'}
-                        >
-                          测试连接
                         </Button>
                       </Space>
                     </div>
@@ -151,6 +149,7 @@ const SettingsPage: React.FC = () => {
         onClose={() => setApiKeyModalVisible(false)}
         onSave={handleSaveApiKey}
         currentApiKey={currentApiKey}
+        loading={loading}
       />
     </div>
   );

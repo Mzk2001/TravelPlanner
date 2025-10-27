@@ -1,15 +1,38 @@
-$body = @{
-    userId = 1
-    message = "我想去日本东京旅游，预算1万元，2个人，喜欢美食和动漫"
-} | ConvertTo-Json
+# 测试API Key端点
+Write-Host "测试AI API Key端点..."
 
-Write-Host "发送请求体: $body"
-
+# 测试GET方法
+Write-Host "`n1. 测试GET方法（无API Key）:"
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/conversations/chat" -Method POST -ContentType "application/json" -Body $body
-    Write-Host "响应:"
-    $response | ConvertTo-Json -Depth 10
+    $response = Invoke-WebRequest -Uri "http://localhost:8080/api/ai/test" -Method GET
+    Write-Host "状态码: $($response.StatusCode)"
+    Write-Host "响应: $($response.Content)"
 } catch {
     Write-Host "错误: $($_.Exception.Message)"
-    Write-Host "响应内容: $($_.Exception.Response)"
 }
+
+# 测试GET方法（带API Key）
+Write-Host "`n2. 测试GET方法（带API Key）:"
+try {
+    $response = Invoke-WebRequest -Uri "http://localhost:8080/api/ai/test?apiKey=sk-test12345678901234567890" -Method GET
+    Write-Host "状态码: $($response.StatusCode)"
+    Write-Host "响应: $($response.Content)"
+} catch {
+    Write-Host "错误: $($_.Exception.Message)"
+}
+
+# 测试POST方法
+Write-Host "`n3. 测试POST方法（带API Key）:"
+try {
+    $body = @{
+        apiKey = "sk-test12345678901234567890"
+    } | ConvertTo-Json
+    
+    $response = Invoke-WebRequest -Uri "http://localhost:8080/api/ai/test" -Method POST -Body $body -ContentType "application/json"
+    Write-Host "状态码: $($response.StatusCode)"
+    Write-Host "响应: $($response.Content)"
+} catch {
+    Write-Host "错误: $($_.Exception.Message)"
+}
+
+Write-Host "`n测试完成！"

@@ -7,18 +7,19 @@ const { Title, Text } = Typography;
 interface ApiKeyConfigProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (apiKey: string) => void;
+  onSave: (apiKey: string) => Promise<void>;
   currentApiKey?: string;
+  loading?: boolean;
 }
 
 const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
   visible,
   onClose,
   onSave,
-  currentApiKey = ''
+  currentApiKey = '',
+  loading = false
 }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -29,15 +30,12 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
   }, [visible, currentApiKey, form]);
 
   const handleSubmit = async (values: { apiKey: string }) => {
-    setLoading(true);
     try {
       await onSave(values.apiKey);
       message.success('API Key 配置成功！');
       onClose();
     } catch (error) {
       message.error('配置失败，请重试');
-    } finally {
-      setLoading(false);
     }
   };
 

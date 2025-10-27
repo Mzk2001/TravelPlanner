@@ -28,6 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class AiService {
     
     private final RestTemplate restTemplate;
+    private final UserService userService;
     
     @Value("${app.xunfei.app-id:}")
     private String xunfeiAppId;
@@ -84,7 +85,33 @@ public class AiService {
     }
     
     /**
-     * 从用户消息中提取旅行计划字段
+     * 从用户消息中提取旅行计划字段（使用用户特定的API Key）
+     * 
+     * @param userId 用户ID
+     * @param userMessage 用户消息
+     * @return 提取的字段
+     */
+    public ExtractedFields extractTravelFields(Long userId, String userMessage) {
+        try {
+            // 获取用户的API Key
+            String userApiKey = userService.getQwenApiKey(userId);
+            if (userApiKey == null || userApiKey.trim().isEmpty()) {
+                log.warn("用户 {} 未配置API Key，使用默认配置", userId);
+                return extractTravelFields(userMessage);
+            }
+            
+            // 使用用户特定的API Key进行字段提取
+            return extractFieldsWithCustomKey(userApiKey, userMessage);
+            
+        } catch (Exception e) {
+            log.error("使用用户API Key提取字段失败: {}", e.getMessage());
+            // 回退到默认方法
+            return extractTravelFields(userMessage);
+        }
+    }
+    
+    /**
+     * 从用户消息中提取旅行计划字段（使用配置文件中的API Key）
      * 
      * @param userMessage 用户消息
      * @return 提取的字段
@@ -172,6 +199,60 @@ public class AiService {
             
         } catch (Exception e) {
             log.error("AI字段提取失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * 使用自定义API Key从用户消息中提取旅行计划字段
+     * 
+     * @param apiKey 自定义API Key
+     * @param userMessage 用户消息
+     * @return 提取的字段
+     */
+    public ExtractedFields extractFieldsWithCustomKey(String apiKey, String userMessage) {
+        try {
+            String prompt = String.format(
+                "请从以下用户消息中提取旅行规划的关键信息，并以JSON格式返回：\n" +
+                "用户消息：%s\n\n" +
+                "请提取以下字段：\n" +
+                "1. destination（目的地）：提取具体的城市或国家名称，如\"日本东京\"、\"北京\"等\n" +
+                "2. budget（预算）：提取数字金额，统一转换为人民币元，如10000表示1万元\n" +
+                "3. groupSize（人数）：提取旅行人数，如2表示2个人\n" +
+                "4. travelType（旅行类型）：如\"家庭游\"、\"情侣游\"、\"商务游\"、\"自由行\"等\n\n" +
+                "请严格按照以下JSON格式返回，如果某个字段无法提取则设为null：\n" +
+                "{\n" +
+                "  \"destination\": \"具体目的地\",\n" +
+                "  \"budget\": 数字金额,\n" +
+                "  \"groupSize\": 人数,\n" +
+                "  \"travelType\": \"旅行类型\"\n" +
+                "}",
+                userMessage
+            );
+            
+            log.info("使用自定义API Key进行字段提取");
+            String response = callQwenAPIWithCustomKey(apiKey, prompt);
+            log.info("通义千问字段提取响应: {}", response);
+            
+            // 解析JSON响应
+            ExtractedFields fields = parseFieldsFromAIResponse(response);
+            
+            // 调试输出：打印提取出的字段
+            if (fields != null) {
+                log.info("=== 提取出的字段调试信息 ===");
+                log.info("目的地 (destination): '{}'", fields.getDestination());
+                log.info("预算 (budget): {}", fields.getBudget());
+                log.info("团队人数 (groupSize): {}", fields.getGroupSize());
+                log.info("旅行类型 (travelType): '{}'", fields.getTravelType());
+                log.info("=== 字段提取完成 ===");
+            } else {
+                log.warn("字段提取结果为null");
+            }
+            
+            return fields;
+            
+        } catch (Exception e) {
+            log.error("自定义API Key字段提取失败: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -336,6 +417,84 @@ public class AiService {
     }
     
     /**
+     * 使用自定义API Key调用通义千问API
+     * 
+     * @param apiKey 自定义API Key
+     * @param prompt 提示词
+     * @return API响应
+     */
+    private String callQwenAPIWithCustomKey(String apiKey, String prompt) {
+        try {
+            // 构建请求体 - 使用通义千问的正确格式
+            Map<String, Object> request = new HashMap<>();
+            request.put("model", "qwen-turbo");
+            
+            // 使用messages格式（通义千问标准格式）
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", prompt);
+            messages.add(message);
+            
+            // 构建input对象（通义千问的正确格式）
+            Map<String, Object> input = new HashMap<>();
+            input.put("messages", messages);
+            request.put("input", input);
+            
+            // 构建parameters对象
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("temperature", 0.3); // 降低温度以获得更稳定的JSON输出
+            parameters.put("max_tokens", 500);  // 减少token数量
+            request.put("parameters", parameters);
+            
+            // 设置请求头
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
+            headers.set("X-DashScope-Async", "disable"); // 确保同步调用
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+            
+            // 使用正确的通义千问API端点
+            String url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
+            
+            log.info("使用自定义API Key调用通义千问字段提取API: {}", url);
+            
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(url, entity, (Class<Map<String, Object>>) (Class<?>) Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                
+                // 检查是否有错误
+                if (responseBody.containsKey("code")) {
+                    String errorCode = String.valueOf(responseBody.get("code"));
+                    String errorMessage = String.valueOf(responseBody.get("message"));
+                    log.error("通义千问API返回错误: code={}, message={}", errorCode, errorMessage);
+                    return null;
+                }
+                
+                // 解析响应 - 通义千问的响应格式
+                if (responseBody.containsKey("output")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
+                    if (output != null && output.containsKey("text")) {
+                        String text = (String) output.get("text");
+                        log.info("自定义API Key通义千问字段提取成功，内容长度: {}", text != null ? text.length() : 0);
+                        return text;
+                    }
+                }
+            }
+            
+            return null;
+            
+        } catch (Exception e) {
+            log.error("自定义API Key通义千问API调用失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
      * 提取目的地
      */
     private String extractDestination(String userMessage) {
@@ -473,7 +632,34 @@ public class AiService {
     }
     
     /**
-     * 使用通义千问生成旅游计划
+     * 使用通义千问生成旅游计划（使用用户特定的API Key）
+     * 
+     * @param userId 用户ID
+     * @param userMessage 用户消息
+     * @param planContext 计划上下文
+     * @return AI生成的回复
+     */
+    public String generateTravelPlan(Long userId, String userMessage, String planContext) {
+        try {
+            // 获取用户的API Key
+            String userApiKey = userService.getQwenApiKey(userId);
+            if (userApiKey == null || userApiKey.trim().isEmpty()) {
+                log.warn("用户 {} 未配置API Key，使用默认配置", userId);
+                return generateTravelPlan(userMessage, planContext);
+            }
+            
+            // 使用用户特定的API Key
+            return generateTravelPlanWithCustomKey(userApiKey, userMessage, planContext);
+            
+        } catch (Exception e) {
+            log.error("使用用户API Key生成旅游计划失败: {}", e.getMessage());
+            // 回退到默认方法
+            return generateTravelPlan(userMessage, planContext);
+        }
+    }
+    
+    /**
+     * 使用通义千问生成旅游计划（使用配置文件中的API Key）
      * 
      * @param userMessage 用户消息
      * @param planContext 计划上下文
@@ -710,7 +896,37 @@ public class AiService {
     }
     
     /**
-     * AI预算分析和优化
+     * 使用AI进行预算分析（使用用户特定的API Key）
+     * 
+     * @param planId 计划ID
+     * @param userId 用户ID
+     * @param budgetData 预算数据
+     * @param expenseData 支出数据
+     * @return AI分析结果
+     */
+    public String analyzeBudgetWithAI(Long planId, Long userId, Map<String, Object> budgetData, Map<String, Object> expenseData) {
+        try {
+            log.info("使用AI进行预算分析，计划ID: {}, 用户ID: {}", planId, userId);
+            
+            // 获取用户的API Key
+            String userApiKey = userService.getQwenApiKey(userId);
+            if (userApiKey == null || userApiKey.trim().isEmpty()) {
+                log.warn("用户 {} 未配置API Key，使用默认配置", userId);
+                return analyzeBudgetWithAI(planId, budgetData, expenseData);
+            }
+            
+            // 使用用户特定的API Key进行预算分析
+            return analyzeBudgetWithCustomKey(userApiKey, planId, budgetData, expenseData);
+            
+        } catch (Exception e) {
+            log.error("使用用户API Key进行预算分析失败: {}", e.getMessage());
+            // 回退到默认方法
+            return analyzeBudgetWithAI(planId, budgetData, expenseData);
+        }
+    }
+    
+    /**
+     * AI预算分析和优化（使用配置文件中的API Key）
      * 
      * @param planId 计划ID
      * @param budgetData 预算数据
@@ -745,6 +961,69 @@ public class AiService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + qwenApiKey);
+            headers.set("X-DashScope-Async", "disable"); // 确保同步调用
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+            
+            String url = qwenBaseUrl + "/services/aigc/text-generation/generation";
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(url, entity, (Class<Map<String, Object>>) (Class<?>) Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
+                String text = (String) output.get("text");
+                
+                log.info("AI预算分析生成成功");
+                return text;
+            }
+            
+            return "AI预算分析服务暂时不可用，请稍后再试。";
+            
+        } catch (Exception e) {
+            log.error("AI预算分析失败: {}", e.getMessage());
+            return "AI预算分析失败，请稍后再试。";
+        }
+    }
+    
+    /**
+     * 使用自定义API Key进行预算分析
+     * 
+     * @param apiKey 自定义API Key
+     * @param planId 计划ID
+     * @param budgetData 预算数据
+     * @param expenseData 支出数据
+     * @return AI分析结果
+     */
+    private String analyzeBudgetWithCustomKey(String apiKey, Long planId, Map<String, Object> budgetData, Map<String, Object> expenseData) {
+        try {
+            log.info("使用自定义API Key进行预算分析，计划ID: {}", planId);
+            
+            Map<String, Object> request = new HashMap<>();
+            request.put("model", "qwen-turbo");
+            
+            // 使用正确的messages格式
+            java.util.List<Map<String, Object>> messages = new java.util.ArrayList<>();
+            Map<String, Object> message = new HashMap<>();
+            message.put("role", "user");
+            message.put("content", buildBudgetAnalysisPrompt(budgetData, expenseData));
+            messages.add(message);
+            
+            // 构建input对象（通义千问的正确格式）
+            Map<String, Object> input = new HashMap<>();
+            input.put("messages", messages);
+            request.put("input", input);
+            
+            // 构建parameters对象
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("temperature", 0.3);
+            parameters.put("max_tokens", 1500);
+            request.put("parameters", parameters);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
             headers.set("X-DashScope-Async", "disable"); // 确保同步调用
             
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);

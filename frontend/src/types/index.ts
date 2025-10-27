@@ -134,6 +134,14 @@ export interface ApiResponse<T = any> {
   timestamp: string;
 }
 
+// 简单响应类型（用于API Key管理等简单操作）
+export interface SimpleResponse {
+  success: boolean;
+  message: string;
+  hasApiKey?: boolean;
+  maskedApiKey?: string;
+}
+
 export interface PageResponse<T> {
   content: T[];
   pageable: {

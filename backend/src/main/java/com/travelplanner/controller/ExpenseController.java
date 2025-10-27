@@ -2,6 +2,7 @@ package com.travelplanner.controller;
 
 import com.travelplanner.entity.Expense;
 import com.travelplanner.service.ExpenseService;
+import com.travelplanner.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -10,8 +11,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,6 +35,7 @@ import com.travelplanner.util.MapUtils;
 public class ExpenseController {
     
     private final ExpenseService expenseService;
+    private final JwtUtil jwtUtil;
     
     /**
      * 创建费用记录
@@ -316,12 +320,25 @@ public class ExpenseController {
      * 获取计划的预算分析
      * 
      * @param planId 计划ID
+     * @param request HTTP请求
      * @return 预算分析结果
      */
     @GetMapping("/plans/{planId}/budget-analysis")
-    public ResponseEntity<?> getBudgetAnalysis(@PathVariable Long planId) {
+    public ResponseEntity<?> getBudgetAnalysis(@PathVariable Long planId, HttpServletRequest request) {
         try {
-            Map<String, Object> analysis = expenseService.getBudgetAnalysis(planId);
+            // 从JWT token中获取用户ID
+            String jwt = getJwtFromRequest(request);
+            Long userId = null;
+            if (jwt != null && jwtUtil.validateToken(jwt)) {
+                userId = jwtUtil.getUserIdFromToken(jwt);
+            }
+            
+            if (userId == null) {
+                return ResponseEntity.badRequest()
+                        .body(MapUtils.of("code", 400, "message", "用户未认证"));
+            }
+            
+            Map<String, Object> analysis = expenseService.getBudgetAnalysis(planId, userId);
             
             return ResponseEntity.ok(MapUtils.of(
                 "code", 200,
@@ -361,5 +378,19 @@ public class ExpenseController {
             return ResponseEntity.badRequest()
                     .body(MapUtils.of("code", 400, "message", e.getMessage()));
         }
+    }
+    
+    /**
+     * 从请求中获取JWT令牌
+     * 
+     * @param request HTTP请求
+     * @return JWT令牌
+     */
+    private String getJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }

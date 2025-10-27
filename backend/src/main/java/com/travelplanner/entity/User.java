@@ -51,6 +51,9 @@ public class User {
     @Column(name = "is_active")
     private Boolean isActive = true;
     
+    @Column(name = "qwen_api_key", length = 200)
+    private String qwenApiKey;
+    
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

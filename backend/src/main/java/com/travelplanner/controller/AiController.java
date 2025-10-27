@@ -96,7 +96,40 @@ public class AiController {
     }
     
     /**
-     * 使用自定义API Key生成旅游计划
+     * 使用当前用户的API Key生成旅游计划
+     * 
+     * @param userId 用户ID
+     * @param request 生成请求
+     * @return 生成的计划
+     */
+    @PostMapping("/generate/{userId}")
+    public ResponseEntity<?> generateWithUserKey(@PathVariable Long userId, @RequestBody Map<String, String> request) {
+        try {
+            String userMessage = request.get("userMessage");
+            String planContext = request.get("planContext");
+            
+            if (userMessage == null || userMessage.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(createResponseMap(false, "用户消息不能为空"));
+            }
+            
+            log.info("使用用户 {} 的API Key生成旅游计划", userId);
+            String result = aiService.generateTravelPlan(userId, userMessage, planContext != null ? planContext : "");
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("result", result);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("生成旅游计划失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(createResponseMap(false, "生成失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 使用自定义API Key生成旅游计划（保留向后兼容）
      * 
      * @param request 生成请求
      * @return 生成的计划

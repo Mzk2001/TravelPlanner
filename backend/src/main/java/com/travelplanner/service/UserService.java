@@ -122,4 +122,55 @@ public class UserService {
         user.setIsActive(isActive);
         userRepository.save(user);
     }
+    
+    /**
+     * 保存用户的通义千问API Key
+     * 
+     * @param userId 用户ID
+     * @param apiKey API Key
+     */
+    public void saveQwenApiKey(Long userId, String apiKey) {
+        log.info("保存用户API Key: userId={}", userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        user.setQwenApiKey(apiKey);
+        userRepository.save(user);
+        
+        log.info("用户API Key保存成功: userId={}", userId);
+    }
+    
+    /**
+     * 获取用户的通义千问API Key
+     * 
+     * @param userId 用户ID
+     * @return API Key
+     */
+    @Transactional(readOnly = true)
+    public String getQwenApiKey(Long userId) {
+        log.info("获取用户API Key: userId={}", userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        return user.getQwenApiKey();
+    }
+    
+    /**
+     * 删除用户的通义千问API Key
+     * 
+     * @param userId 用户ID
+     */
+    public void deleteQwenApiKey(Long userId) {
+        log.info("删除用户API Key: userId={}", userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        user.setQwenApiKey(null);
+        userRepository.save(user);
+        
+        log.info("用户API Key删除成功: userId={}", userId);
+    }
 }

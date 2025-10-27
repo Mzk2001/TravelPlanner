@@ -15,6 +15,7 @@ import {
   VoiceChatResponse,
   ExtractedFields,
   ApiResponse,
+  SimpleResponse,
   PageResponse,
   PlaceSearchResult,
   PlaceDetail,
@@ -95,6 +96,22 @@ class ApiService {
 
   async updateUser(userId: number, userData: UpdateUserRequest): Promise<User> {
     const response = await this.api.put(`/users/${userId}`, userData);
+    return response.data;
+  }
+
+  // API Key管理相关API
+  async saveApiKey(userId: number, apiKey: string): Promise<SimpleResponse> {
+    const response = await this.api.post(`/users/${userId}/api-key`, { apiKey });
+    return response.data;
+  }
+
+  async getApiKeyStatus(userId: number): Promise<SimpleResponse> {
+    const response = await this.api.get(`/users/${userId}/api-key/status`);
+    return response.data;
+  }
+
+  async deleteApiKey(userId: number): Promise<SimpleResponse> {
+    const response = await this.api.delete(`/users/${userId}/api-key`);
     return response.data;
   }
 

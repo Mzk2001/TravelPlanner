@@ -250,10 +250,11 @@ public class ExpenseService {
      * 获取计划的预算分析
      * 
      * @param planId 计划ID
+     * @param userId 用户ID
      * @return 预算分析结果
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> getBudgetAnalysis(Long planId) {
+    public Map<String, Object> getBudgetAnalysis(Long planId, Long userId) {
         Optional<TravelPlan> planOpt = travelPlanRepository.findById(planId);
         if (!planOpt.isPresent()) {
             throw new IllegalArgumentException("旅游计划不存在");
@@ -314,7 +315,7 @@ public class ExpenseService {
                     totalExpense.divide(totalBudget, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100")) : BigDecimal.ZERO);
             expenseData.put("categoryBreakdown", categoryBreakdown);
             
-            String aiAnalysis = aiService.analyzeBudgetWithAI(planId, budgetData, expenseData);
+            String aiAnalysis = aiService.analyzeBudgetWithAI(planId, userId, budgetData, expenseData);
             analysis.put("aiAnalysis", aiAnalysis);
             analysis.put("hasAiAnalysis", true);
             

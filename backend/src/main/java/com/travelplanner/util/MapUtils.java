@@ -76,4 +76,18 @@ public class MapUtils {
         map.put(k6, v6);
         return map;
     }
+    
+    /**
+     * 创建API响应Map
+     * 
+     * @param success 是否成功
+     * @param message 消息
+     * @return 响应Map
+     */
+    public static Map<String, Object> createResponseMap(boolean success, String message) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", success);
+        response.put("message", message);
+        return response;
+    }
 }

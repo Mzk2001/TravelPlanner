@@ -76,7 +76,7 @@ app:
     
   # 阿里通义千问API配置
   qwen:
-    api-key: sk-cc0831e2c3d045ccb72a4c75ad234333
+    api-key: ${QWEN_API_KEY:}  # 从环境变量或用户数据库获取
     base-url: https://dashscope.aliyuncs.com/api/v1
     model: qwen-turbo
     

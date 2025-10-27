@@ -175,6 +175,100 @@ public class UserController {
         public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
     }
     
+    /**
+     * 保存用户的通义千问API Key
+     * 
+     * @param userId 用户ID
+     * @param request API Key请求
+     * @return 保存结果
+     */
+    @PostMapping("/{userId}/api-key")
+    public ResponseEntity<?> saveApiKey(@PathVariable Long userId, @RequestBody ApiKeyRequest request) {
+        try {
+            log.info("保存用户API Key请求: userId={}", userId);
+            
+            if (request.getApiKey() == null || request.getApiKey().trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(MapUtils.createResponseMap(false, "API Key不能为空"));
+            }
+            
+            userService.saveQwenApiKey(userId, request.getApiKey());
+            
+            return ResponseEntity.ok(MapUtils.createResponseMap(true, "API Key保存成功"));
+            
+        } catch (Exception e) {
+            log.error("保存API Key失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(MapUtils.createResponseMap(false, "保存失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 获取用户的通义千问API Key状态
+     * 
+     * @param userId 用户ID
+     * @return API Key状态
+     */
+    @GetMapping("/{userId}/api-key/status")
+    public ResponseEntity<?> getApiKeyStatus(@PathVariable Long userId) {
+        try {
+            log.info("获取用户API Key状态: userId={}", userId);
+            
+            String apiKey = userService.getQwenApiKey(userId);
+            boolean hasApiKey = apiKey != null && !apiKey.trim().isEmpty();
+            
+            Map<String, Object> response = MapUtils.createResponseMap(true, "获取成功");
+            response.put("hasApiKey", hasApiKey);
+            response.put("maskedApiKey", hasApiKey ? maskApiKey(apiKey) : null);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("获取API Key状态失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(MapUtils.createResponseMap(false, "获取失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 删除用户的通义千问API Key
+     * 
+     * @param userId 用户ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/{userId}/api-key")
+    public ResponseEntity<?> deleteApiKey(@PathVariable Long userId) {
+        try {
+            log.info("删除用户API Key请求: userId={}", userId);
+            
+            userService.deleteQwenApiKey(userId);
+            
+            return ResponseEntity.ok(MapUtils.createResponseMap(true, "API Key删除成功"));
+            
+        } catch (Exception e) {
+            log.error("删除API Key失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(MapUtils.createResponseMap(false, "删除失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 掩码API Key（只显示前几位和后几位）
+     * 
+     * @param apiKey 原始API Key
+     * @return 掩码后的API Key
+     */
+    private String maskApiKey(String apiKey) {
+        if (apiKey == null || apiKey.length() <= 8) {
+            return "****";
+        }
+        
+        int start = Math.min(4, apiKey.length() / 3);
+        int end = Math.min(4, apiKey.length() / 3);
+        String masked = apiKey.substring(0, start) + "****" + apiKey.substring(apiKey.length() - end);
+        return masked;
+    }
+    
     public static class UserResponse {
         private Long id;
         private String username;
@@ -205,5 +299,15 @@ public class UserController {
         public void setIsActive(Boolean isActive) { this.isActive = isActive; }
         public java.time.LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
+    }
+    
+    /**
+     * API Key请求类
+     */
+    public static class ApiKeyRequest {
+        private String apiKey;
+        
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
     }
 }

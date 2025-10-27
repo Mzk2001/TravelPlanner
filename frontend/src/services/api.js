@@ -159,6 +159,21 @@ export const expenseAPI = {
   },
 };
 
+// API Key管理相关API
+export const apiKeyAPI = {
+  saveApiKey: (userId, apiKey) => 
+    api.post(`/users/${userId}/api-key`, { apiKey }),
+  
+  getApiKeyStatus: (userId) => 
+    api.get(`/users/${userId}/api-key/status`),
+  
+  deleteApiKey: (userId) => 
+    api.delete(`/users/${userId}/api-key`),
+  
+  testApiKey: (apiKey) => 
+    api.post('/ai/test', { apiKey }),
+};
+
 // 默认导出包含所有API方法的对象
 const apiService = {
   // 认证相关
@@ -198,6 +213,12 @@ const apiService = {
   // 预算优化相关
   getBudgetOptimization: (planId, targetSavings) => 
     api.post(`/expenses/plans/${planId}/budget-optimization?targetSavings=${targetSavings}`),
+  
+  // API Key管理相关
+  saveApiKey: apiKeyAPI.saveApiKey,
+  getApiKeyStatus: apiKeyAPI.getApiKeyStatus,
+  deleteApiKey: apiKeyAPI.deleteApiKey,
+  testApiKey: apiKeyAPI.testApiKey,
 };
 
 export default apiService;
