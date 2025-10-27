@@ -77,4 +77,19 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
      * @return 对话记录数量
      */
     long countByPlanId(Long planId);
+    
+    /**
+     * 根据用户ID删除所有对话记录
+     * 
+     * @param userId 用户ID
+     */
+    void deleteByUserId(Long userId);
+    
+    /**
+     * 根据用户ID和计划ID删除对话记录
+     * 
+     * @param userId 用户ID
+     * @param planId 计划ID
+     */
+    void deleteByUserIdAndPlanId(Long userId, Long planId);
 }

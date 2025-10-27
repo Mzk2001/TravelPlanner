@@ -85,12 +85,6 @@ const VoiceRecorder = ({ onRecordingComplete, onCancel, visible, onClose }) => {
     };
   }, [cleanup]);
 
-  // 检查浏览器支持
-  useEffect(() => {
-    if (!isSupported) {
-      message.error('您的浏览器不支持语音录制功能');
-    }
-  }, [isSupported]);
 
   return (
     <Modal
@@ -176,13 +170,6 @@ const VoiceRecorder = ({ onRecordingComplete, onCancel, visible, onClose }) => {
           </div>
         )}
 
-        {!isSupported && (
-          <div style={{ color: '#999' }}>
-            <Text>您的浏览器不支持语音录制功能</Text>
-            <br />
-            <Text type="secondary">请使用Chrome、Firefox或Safari浏览器</Text>
-          </div>
-        )}
       </div>
     </Modal>
   );

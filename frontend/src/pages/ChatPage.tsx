@@ -33,6 +33,7 @@ import apiService from '../services/api';
 import { Conversation, ChatRequest, ChatResponse, TravelPlan, ExtractedFields } from '../types';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import VoiceConfigModal from '../components/VoiceConfigModal';
+import BackToTop from '../components/BackToTop';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -52,6 +53,7 @@ const ChatPage: React.FC = () => {
   const [savedPlanId, setSavedPlanId] = useState<number | null>(null);
   const [voiceConfigVisible, setVoiceConfigVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // 语音录制Hook
   const {
@@ -427,12 +429,15 @@ const ChatPage: React.FC = () => {
               }}
             >
               {/* 消息列表 */}
-              <div style={{ 
-                flex: 1, 
-                overflowY: 'auto', 
-                marginBottom: 16,
-                padding: '0 16px'
-              }}>
+              <div 
+                ref={messagesContainerRef}
+                style={{ 
+                  flex: 1, 
+                  overflowY: 'auto', 
+                  marginBottom: 16,
+                  padding: '0 16px'
+                }}
+              >
                 {conversations.length === 0 ? (
                   <div style={{ 
                     textAlign: 'center', 
@@ -755,6 +760,16 @@ const ChatPage: React.FC = () => {
         onSave={() => {
           setVoiceConfigVisible(false);
           antdMessage.success('语音配置已保存，现在可以使用语音输入功能了！');
+        }}
+      />
+
+      {/* 回到顶部按钮 */}
+      <BackToTop 
+        target={messagesContainerRef.current}
+        visibilityHeight={200}
+        style={{
+          bottom: '120px',
+          right: '30px'
         }}
       />
     </div>

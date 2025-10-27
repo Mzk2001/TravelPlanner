@@ -374,6 +374,38 @@ public class ConversationController {
     }
     
     /**
+     * 删除对话记录
+     * 
+     * @param userId 用户ID
+     * @param planId 计划ID（可选）
+     * @return 删除结果
+     */
+    @DeleteMapping
+    public ResponseEntity<?> deleteConversations(@RequestParam Long userId,
+                                               @RequestParam(required = false) Long planId) {
+        try {
+            log.info("删除对话记录请求: userId={}, planId={}", userId, planId);
+            
+            if (planId != null) {
+                // 删除指定计划的对话记录
+                conversationService.deleteByUserIdAndPlanId(userId, planId);
+                log.info("指定计划的对话记录删除成功");
+            } else {
+                // 删除用户的所有对话记录
+                conversationService.deleteByUserId(userId);
+                log.info("用户所有对话记录删除成功");
+            }
+            
+            return ResponseEntity.ok(MapUtils.of("message", "对话记录删除成功"));
+            
+        } catch (Exception e) {
+            log.error("删除对话记录失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(MapUtils.of("error", "删除对话记录失败"));
+        }
+    }
+    
+    /**
      * 搜索地点
      * 
      * @param keyword 搜索关键词

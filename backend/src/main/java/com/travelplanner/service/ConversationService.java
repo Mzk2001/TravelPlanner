@@ -192,4 +192,29 @@ public class ConversationService {
             log.warn("对话记录不存在: conversationId={}", conversationId);
         }
     }
+    
+    /**
+     * 删除用户的所有对话记录
+     * 
+     * @param userId 用户ID
+     */
+    @Transactional
+    public void deleteByUserId(Long userId) {
+        log.info("删除用户的所有对话记录: userId={}", userId);
+        conversationRepository.deleteByUserId(userId);
+        log.info("用户对话记录删除成功");
+    }
+    
+    /**
+     * 删除用户指定计划的对话记录
+     * 
+     * @param userId 用户ID
+     * @param planId 计划ID
+     */
+    @Transactional
+    public void deleteByUserIdAndPlanId(Long userId, Long planId) {
+        log.info("删除用户指定计划的对话记录: userId={}, planId={}", userId, planId);
+        conversationRepository.deleteByUserIdAndPlanId(userId, planId);
+        log.info("用户计划对话记录删除成功");
+    }
 }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Input, Button, List, Avatar, Spin, message, Form, Modal, Row, Col, DatePicker, Select, InputNumber, Space } from 'antd';
-import { SendOutlined, AudioOutlined, UserOutlined, RobotOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
+import { SendOutlined, AudioOutlined, UserOutlined, RobotOutlined, SaveOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { conversationAPI, planAPI } from '../services/api';
 import VoiceRecorder from '../components/VoiceRecorder';
 import useVoiceRecognition from '../hooks/useVoiceRecognition';
+import BackToTop from '../components/BackToTop';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -20,6 +21,22 @@ const ChatPage = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState(null);
   const [voiceRecorderVisible, setVoiceRecorderVisible] = useState(false);
+  const messagesContainerRef = useRef(null);
+  const [messagesContainer, setMessagesContainer] = useState(null);
+  
+  // 设置消息容器引用
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      setMessagesContainer(messagesContainerRef.current);
+    }
+  }, []); // 只在组件挂载时执行一次
+
+  // 当消息变化时，确保容器引用是最新的
+  useEffect(() => {
+    if (messagesContainerRef.current && !messagesContainer) {
+      setMessagesContainer(messagesContainerRef.current);
+    }
+  }, [messages, messagesContainer]);
   
   // 语音识别Hook
   const {
@@ -116,8 +133,16 @@ const ChatPage = () => {
       messageType: 'text',
       createdAt: new Date().toISOString()
     };
-    setMessages(prev => [...prev, newUserMessage]);
-
+    
+    // 添加加载中的AI消息
+    const loadingMessage = {
+      id: Date.now() + 0.5,
+      isLoading: true,
+      messageType: 'loading',
+      createdAt: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, newUserMessage, loadingMessage]);
     form.resetFields();
     setLoading(true);
 
@@ -125,7 +150,7 @@ const ChatPage = () => {
       const response = await conversationAPI.sendMessage(userMessage);
       const aiResponse = response.data;
 
-      // 添加AI回复到界面
+      // 添加AI回复到界面，同时移除加载消息
       const newAiMessage = {
         id: Date.now() + 1,
         aiResponse: aiResponse.message,
@@ -135,26 +160,44 @@ const ChatPage = () => {
         extractedFields: aiResponse.extractedFields
       };
       
-      // 调试信息
-      console.log('AI回复内容:', aiResponse.message);
-      console.log('AI回复长度:', aiResponse.message?.length);
-      console.log('处理时间:', aiResponse.processingTime);
-      console.log('提取的字段:', aiResponse.extractedFields);
-      console.log('新消息对象:', newAiMessage);
-      
       setMessages(prev => {
-        const updated = [...prev, newAiMessage];
-        console.log('更新后的消息列表:', updated);
-        return updated;
+        // 移除加载消息，添加AI回复
+        const filtered = prev.filter(msg => !msg.isLoading);
+        return [...filtered, newAiMessage];
       });
 
     } catch (error) {
       message.error('发送消息失败');
-      // 移除失败的用户消息
-      setMessages(prev => prev.slice(0, -1));
+      // 移除失败的用户消息和加载消息
+      setMessages(prev => prev.filter(msg => !msg.isLoading).slice(0, -1));
     } finally {
       setLoading(false);
     }
+  };
+
+  // 清除对话记录
+  const clearConversation = () => {
+    Modal.confirm({
+      title: '确认清除对话',
+      content: '您确定要清除当前对话框中的所有对话记录吗？此操作不可撤销。',
+      okText: '确认清除',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          // 调用后端API删除对话记录
+          await conversationAPI.deleteConversations(user.id, planId || null);
+          
+          // 清空前端状态
+          setMessages([]);
+          
+          message.success('对话记录已清除');
+        } catch (error) {
+          console.error('清除对话记录失败:', error);
+          message.error('清除对话记录失败，请重试');
+        }
+      },
+    });
   };
 
   // 保存旅行计划
@@ -170,16 +213,9 @@ const ChatPage = () => {
     }
 
     try {
-      console.log('保存计划 - 消息信息:', {
-        id: messageItem.id,
-        aiResponse: messageItem.aiResponse?.substring(0, 100) + '...',
-        extractedFields: messageItem.extractedFields,
-        hasExtractedFields: !!messageItem.extractedFields
-      });
 
       // 如果有提取的字段，使用新的API方法
       if (messageItem.extractedFields && messageItem.aiResponse) {
-        console.log('✅ 使用提取字段保存计划:', messageItem.extractedFields);
         const response = await conversationAPI.saveAsPlanWithFields({
           userId: user.id,
           aiResponse: messageItem.aiResponse,
@@ -190,7 +226,6 @@ const ChatPage = () => {
         // 保存计划ID，用于后续编辑
         setSavedPlanId(response.data.planId);
       } else {
-        console.log('⚠️ 没有提取字段，使用原有方法保存');
         // 使用原有的方法
         const response = await conversationAPI.saveAsPlan({
           userId: user.id,
@@ -259,8 +294,6 @@ const ChatPage = () => {
         endDate: values.dateRange && values.dateRange[1] ? 
           values.dateRange[1].format('YYYY-MM-DD') + 'T23:59:59.999Z' : null,
       };
-      
-      console.log('发送的更新数据:', updateData);
       
       await planAPI.updatePlan(savedPlanId, updateData);
       message.success('计划更新成功！');
@@ -339,10 +372,23 @@ const ChatPage = () => {
     <div style={{ height: 'calc(100vh - 120px)' }}>
       <Card 
         title={plan ? `与AI助手对话 - ${plan.planName}` : 'AI旅游助手'}
+        extra={
+          <Button 
+            type="text" 
+            danger 
+            icon={<DeleteOutlined />}
+            onClick={clearConversation}
+            disabled={messages.length === 0}
+            title="清除对话记录"
+          >
+            清除对话
+          </Button>
+        }
         style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
       >
         {/* 消息列表 */}
         <div 
+          ref={messagesContainerRef}
           style={{ 
             flex: 1, 
             overflowY: 'auto', 
@@ -350,7 +396,9 @@ const ChatPage = () => {
             border: '1px solid #f0f0f0',
             borderRadius: '8px',
             marginBottom: '16px',
-            backgroundColor: '#fafafa'
+            backgroundColor: '#fafafa',
+            height: 'calc(100vh - 200px)',
+            maxHeight: 'calc(100vh - 200px)'
           }}
         >
           {messages.length === 0 ? (
@@ -502,6 +550,26 @@ const ChatPage = () => {
                             </Space>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 加载中的AI消息 */}
+                  {msg.isLoading && (
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ 
+                        display: 'inline-block',
+                        maxWidth: '70%',
+                        padding: '12px 16px',
+                        backgroundColor: 'white',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '18px 18px 18px 4px',
+                        wordWrap: 'break-word'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Spin size="small" />
+                          <span style={{ color: '#666' }}>AI正在思考中...</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -683,6 +751,16 @@ const ChatPage = () => {
         onRecordingComplete={handleVoiceRecordingComplete}
         onCancel={handleVoiceRecordingCancel}
         onClose={() => setVoiceRecorderVisible(false)}
+      />
+
+      {/* 回到顶部按钮 */}
+      <BackToTop 
+        target={messagesContainerRef.current}
+        visibilityHeight={200}
+        style={{
+          bottom: '120px',
+          right: '30px'
+        }}
       />
     </div>
   );

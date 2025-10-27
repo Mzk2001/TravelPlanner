@@ -115,6 +115,12 @@ export const conversationAPI = {
   
   saveAsPlanWithFields: (planData) => 
     api.post('/conversations/save-as-plan-with-fields', planData),
+  
+  deleteConversations: (userId, planId = null) => {
+    const params = { userId };
+    if (planId) params.planId = planId;
+    return api.delete('/conversations', { params });
+  },
 };
 
 // 费用管理相关API
@@ -161,17 +167,25 @@ export const expenseAPI = {
 
 // API Key管理相关API
 export const apiKeyAPI = {
-  saveApiKey: (userId, apiKey) => 
-    api.post(`/users/${userId}/api-key`, { apiKey }),
+  saveApiKey: async (userId, apiKey) => {
+    const response = await api.post(`/users/${userId}/api-key`, { apiKey });
+    return response.data;
+  },
   
-  getApiKeyStatus: (userId) => 
-    api.get(`/users/${userId}/api-key/status`),
+  getApiKeyStatus: async (userId) => {
+    const response = await api.get(`/users/${userId}/api-key/status`);
+    return response.data;
+  },
   
-  deleteApiKey: (userId) => 
-    api.delete(`/users/${userId}/api-key`),
+  deleteApiKey: async (userId) => {
+    const response = await api.delete(`/users/${userId}/api-key`);
+    return response.data;
+  },
   
-  testApiKey: (apiKey) => 
-    api.post('/ai/test', { apiKey }),
+  testApiKey: async (apiKey) => {
+    const response = await api.post('/ai/test', { apiKey });
+    return response.data;
+  },
 };
 
 // 默认导出包含所有API方法的对象
@@ -200,6 +214,7 @@ const apiService = {
   getPlaceDetail: conversationAPI.getPlaceDetail,
   saveAsPlan: conversationAPI.saveAsPlan,
   saveAsPlanWithFields: conversationAPI.saveAsPlanWithFields,
+  deleteConversations: conversationAPI.deleteConversations,
   
   // 费用管理相关
   createExpense: expenseAPI.createExpense,
