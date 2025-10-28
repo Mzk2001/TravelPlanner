@@ -1,0 +1,111 @@
+name: Manual Docker Build and Push
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag (e.g., v1.0.0)'
+        required: true
+        default: 'latest'
+      push_to_registry:
+        description: 'Push to Aliyun Registry'
+        type: boolean
+        default: true
+
+env:
+  # 阿里云镜像仓库配置
+  ALIYUN_REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  ALIYUN_NAMESPACE: your-namespace  # 请替换为你的阿里云镜像仓库命名空间
+  
+  # 镜像名称
+  BACKEND_IMAGE: travel-planner-backend
+  FRONTEND_IMAGE: travel-planner-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Aliyun Container Registry
+      if: ${{ inputs.push_to_registry }}
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.ALIYUN_REGISTRY }}
+        username: ${{ secrets.ALIYUN_USERNAME }}
+        password: ${{ secrets.ALIYUN_PASSWORD }}
+        
+    - name: Build backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: ${{ inputs.push_to_registry }}
+        tags: |
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ inputs.tag }}
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        
+    - name: Build frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: ${{ inputs.push_to_registry }}
+        tags: |
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.tag }}
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        
+    - name: Generate deployment info
+      if: ${{ inputs.push_to_registry }}
+      run: |
+        echo "## 🐳 Docker Images Built and Pushed Successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Images Information" >> $GITHUB_STEP_SUMMARY
+        echo "- **Registry**: \`${{ env.ALIYUN_REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Namespace**: \`${{ env.ALIYUN_NAMESPACE }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tag**: \`${{ inputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚀 Backend Image" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Frontend Image" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Pull Commands" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Pull backend image" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Pull frontend image" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🐳 Docker Compose Usage" >> $GITHUB_STEP_SUMMARY
+        echo "You can now use these images in your docker-compose.yml:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
+        echo "services:" >> $GITHUB_STEP_SUMMARY
+        echo "  backend:" >> $GITHUB_STEP_SUMMARY
+        echo "    image: ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "    ports:" >> $GITHUB_STEP_SUMMARY
+        echo "      - \"8080:8080\"" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "  frontend:" >> $GITHUB_STEP_SUMMARY
+        echo "    image: ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "    ports:" >> $GITHUB_STEP_SUMMARY
+        echo "      - \"3000:80\"" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

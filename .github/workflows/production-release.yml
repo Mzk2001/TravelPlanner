@@ -1,0 +1,139 @@
+name: Production Deployment
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 当推送版本标签时触发
+
+env:
+  # 阿里云镜像仓库配置
+  ALIYUN_REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  ALIYUN_NAMESPACE: your-namespace  # 请替换为你的阿里云镜像仓库命名空间
+  
+  # 镜像名称
+  BACKEND_IMAGE: travel-planner-backend
+  FRONTEND_IMAGE: travel-planner-frontend
+
+jobs:
+  build-and-push-production:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Aliyun Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.ALIYUN_REGISTRY }}
+        username: ${{ secrets.ALIYUN_USERNAME }}
+        password: ${{ secrets.ALIYUN_PASSWORD }}
+        
+    - name: Extract version from tag
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
+        echo "minor=$(echo $VERSION | cut -d. -f1-2)" >> $GITHUB_OUTPUT
+        
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.major }}
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:latest
+        labels: |
+          org.opencontainers.image.title=Travel Planner Backend
+          org.opencontainers.image.description=Travel Planner Backend Service
+          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+        
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.version }}
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.major }}
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:latest
+        labels: |
+          org.opencontainers.image.title=Travel Planner Frontend
+          org.opencontainers.image.description=Travel Planner Frontend Application
+          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: Travel Planner ${{ steps.version.outputs.version }}
+        draft: false
+        prerelease: false
+        body: |
+          ## 🚀 Travel Planner ${{ steps.version.outputs.version }} Released!
+          
+          ### 📦 Docker Images
+          
+          **Backend Image:**
+          ```
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
+          ```
+          
+          **Frontend Image:**
+          ```
+          ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.version }}
+          ```
+          
+          ### 🐳 Quick Start
+          
+          ```bash
+          # Pull images
+          docker pull ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
+          docker pull ${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.version }}
+          
+          # Run with docker-compose
+          docker-compose up -d
+          ```
+          
+          ### 📋 Changes
+          - See [Commits](https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}) for detailed changes
+          
+    - name: Generate deployment summary
+      run: |
+        echo "## 🎉 Production Release: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Released Images" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Service | Image | Tags |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|-------|------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Backend | \`${{ env.BACKEND_IMAGE }}\` | \`${{ steps.version.outputs.version }}\`, \`${{ steps.version.outputs.major }}\`, \`latest\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| Frontend | \`${{ env.FRONTEND_IMAGE }}\` | \`${{ steps.version.outputs.version }}\`, \`${{ steps.version.outputs.major }}\`, \`latest\` |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Registry Information" >> $GITHUB_STEP_SUMMARY
+        echo "- **Registry**: \`${{ env.ALIYUN_REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Namespace**: \`${{ env.ALIYUN_NAMESPACE }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Update your production environment with the new images" >> $GITHUB_STEP_SUMMARY
+        echo "2. Test the deployment in staging environment" >> $GITHUB_STEP_SUMMARY
+        echo "3. Monitor application health after deployment" >> $GITHUB_STEP_SUMMARY
