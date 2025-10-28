@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: crpi-1ukso6d3q7pa1s41.cn-hangzhou.personal.cr.aliyuncs.com/522025320121_ai4se/travel-planner-backend:latest
     ports:
       - "8080:8080"
     volumes:
@@ -29,9 +27,7 @@ services:
       start_period: 40s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: crpi-1ukso6d3q7pa1s41.cn-hangzhou.personal.cr.aliyuncs.com/522025320121_ai4se/travel-planner-frontend:latest
     ports:
       - "3000:80"
     depends_on:
