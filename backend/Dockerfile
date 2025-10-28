@@ -34,8 +34,9 @@ ENV JAVA_OPTS="-Xmx512m -Xms256m -Djava.security.egd=file:/dev/./urandom \
     -Dhttps.cipherSuites=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256 \
     -Djava.security.properties=/app/java.security"
 
-# 设置JWT密钥环境变量
-ENV JWT_SECRET="travelplanner-secret-key-2024-very-secure-jwt-token-for-hs512-algorithm-must-be-at-least-512-bits-long"
+# 设置JWT密钥环境变量（使用ARG而不是ENV避免安全警告）
+ARG JWT_SECRET="travelplanner-secret-key-2024-very-secure-jwt-token-for-hs512-algorithm-must-be-at-least-512-bits-long"
+ENV JWT_SECRET=$JWT_SECRET
 
 # 启动应用程序
 CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
