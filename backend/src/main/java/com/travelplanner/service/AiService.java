@@ -30,6 +30,28 @@ public class AiService {
     private final RestTemplate restTemplate;
     private final UserService userService;
     
+    /**
+     * 初始化时检查配置
+     */
+    @javax.annotation.PostConstruct
+    public void init() {
+        log.info("AI服务初始化开始");
+        log.info("通义千问API Key配置状态: {}", 
+            qwenApiKey != null && !qwenApiKey.trim().isEmpty() ? "已配置" : "未配置");
+        log.info("科大讯飞API Key配置状态: {}", 
+            xunfeiApiKey != null && !xunfeiApiKey.trim().isEmpty() ? "已配置" : "未配置");
+        log.info("桩程序模式: {}", mockMode ? "启用" : "禁用");
+        
+        if (mockMode) {
+            log.warn("当前运行在桩程序模式下，将返回模拟数据");
+        } else if (qwenApiKey == null || qwenApiKey.trim().isEmpty() || 
+                   qwenApiKey.equals("your_qwen_api_key")) {
+            log.warn("通义千问API Key未正确配置，AI功能可能无法正常工作");
+        }
+        
+        log.info("AI服务初始化完成");
+    }
+    
     @Value("${app.xunfei.app-id:}")
     private String xunfeiAppId;
     
@@ -180,6 +202,12 @@ public class AiService {
             String response = callQwenAPI(prompt);
             log.info("通义千问字段提取响应: {}", response);
             
+            // 检查API调用是否成功
+            if (response == null || response.trim().isEmpty()) {
+                log.warn("通义千问API调用失败，返回空的字段对象");
+                return new ExtractedFields();
+            }
+            
             // 解析JSON响应
             ExtractedFields fields = parseFieldsFromAIResponse(response);
             
@@ -234,6 +262,12 @@ public class AiService {
             String response = callQwenAPIWithCustomKey(apiKey, prompt);
             log.info("通义千问字段提取响应: {}", response);
             
+            // 检查API调用是否成功
+            if (response == null || response.trim().isEmpty()) {
+                log.warn("通义千问API调用失败，返回空的字段对象");
+                return new ExtractedFields();
+            }
+            
             // 解析JSON响应
             ExtractedFields fields = parseFieldsFromAIResponse(response);
             
@@ -262,6 +296,12 @@ public class AiService {
      */
     private ExtractedFields parseFieldsFromAIResponse(String response) {
         try {
+            // 检查响应是否为null或空
+            if (response == null || response.trim().isEmpty()) {
+                log.warn("AI响应为空，返回空的字段对象");
+                return new ExtractedFields();
+            }
+            
             ExtractedFields fields = new ExtractedFields();
             
             // 简单的JSON解析（不使用复杂的JSON库）
@@ -644,17 +684,36 @@ public class AiService {
             // 获取用户的API Key
             String userApiKey = userService.getQwenApiKey(userId);
             if (userApiKey == null || userApiKey.trim().isEmpty()) {
-                log.warn("用户 {} 未配置API Key，使用默认配置", userId);
-                return generateTravelPlan(userMessage, planContext);
+                log.warn("用户 {} 未配置API Key", userId);
+                return "抱歉，您还没有配置通义千问API Key。请在个人设置中添加您的API Key以使用AI功能。";
+            }
+            
+            // 检查API Key是否为演示用的假Key
+            if (userApiKey.startsWith("sk-test-") || userApiKey.startsWith("sk-demo-") || 
+                userApiKey.equals("your_qwen_api_key") || userApiKey.contains("demo")) {
+                log.warn("用户 {} 使用的是演示API Key: {}", userId, userApiKey);
+                return "检测到您使用的是演示API Key，请配置真实的通义千问API Key以使用AI功能。";
             }
             
             // 使用用户特定的API Key
             return generateTravelPlanWithCustomKey(userApiKey, userMessage, planContext);
             
         } catch (Exception e) {
-            log.error("使用用户API Key生成旅游计划失败: {}", e.getMessage());
-            // 回退到默认方法
-            return generateTravelPlan(userMessage, planContext);
+            log.error("使用用户API Key生成旅游计划失败: {}", e.getMessage(), e);
+            
+            // 提供更详细的错误信息
+            String errorMessage = "AI服务暂时不可用";
+            if (e.getMessage().contains("Connection refused") || e.getMessage().contains("timeout")) {
+                errorMessage += "：网络连接失败，请检查网络连接或稍后重试";
+            } else if (e.getMessage().contains("401") || e.getMessage().contains("Unauthorized")) {
+                errorMessage += "：API Key无效，请检查您的通义千问API Key是否正确";
+            } else if (e.getMessage().contains("403") || e.getMessage().contains("Forbidden")) {
+                errorMessage += "：API访问被拒绝，请检查您的API Key权限";
+            } else {
+                errorMessage += "，请稍后重试。错误信息：" + e.getMessage();
+            }
+            
+            return errorMessage;
         }
     }
     
@@ -780,7 +839,20 @@ public class AiService {
             
         } catch (Exception e) {
             log.error("通义千问生成失败: {}", e.getMessage(), e);
-            return "抱歉，生成旅游计划时发生错误，请稍后再试。错误信息: " + e.getMessage();
+            
+            // 提供更详细的错误信息
+            String errorMessage = "抱歉，生成旅游计划时发生错误";
+            if (e.getMessage().contains("Connection refused") || e.getMessage().contains("timeout")) {
+                errorMessage += "：网络连接失败，请检查网络连接或稍后重试";
+            } else if (e.getMessage().contains("401") || e.getMessage().contains("Unauthorized")) {
+                errorMessage += "：API Key无效，请检查您的通义千问API Key是否正确";
+            } else if (e.getMessage().contains("403") || e.getMessage().contains("Forbidden")) {
+                errorMessage += "：API访问被拒绝，请检查您的API Key权限";
+            } else {
+                errorMessage += "，请稍后再试。错误信息: " + e.getMessage();
+            }
+            
+            return errorMessage;
         }
     }
     
@@ -911,8 +983,15 @@ public class AiService {
             // 获取用户的API Key
             String userApiKey = userService.getQwenApiKey(userId);
             if (userApiKey == null || userApiKey.trim().isEmpty()) {
-                log.warn("用户 {} 未配置API Key，使用默认配置", userId);
-                return analyzeBudgetWithAI(planId, budgetData, expenseData);
+                log.warn("用户 {} 未配置API Key", userId);
+                return "抱歉，您还没有配置通义千问API Key。请在个人设置中添加您的API Key以使用AI预算分析功能。";
+            }
+            
+            // 检查API Key是否为演示用的假Key
+            if (userApiKey.startsWith("sk-test-") || userApiKey.startsWith("sk-demo-") || 
+                userApiKey.equals("your_qwen_api_key") || userApiKey.contains("demo")) {
+                log.warn("用户 {} 使用的是演示API Key: {}", userId, userApiKey);
+                return "检测到您使用的是演示API Key，请配置真实的通义千问API Key以使用AI预算分析功能。";
             }
             
             // 使用用户特定的API Key进行预算分析
@@ -920,8 +999,7 @@ public class AiService {
             
         } catch (Exception e) {
             log.error("使用用户API Key进行预算分析失败: {}", e.getMessage());
-            // 回退到默认方法
-            return analyzeBudgetWithAI(planId, budgetData, expenseData);
+            return "AI预算分析服务暂时不可用，请检查您的API Key是否正确，或稍后重试。错误信息：" + e.getMessage();
         }
     }
     

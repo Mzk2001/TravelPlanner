@@ -70,6 +70,13 @@ public class ConversationController {
                 // 使用用户特定的API Key或默认API Key
                 extractedFields = aiService.extractTravelFields(request.getUserId(), request.getMessage());
             }
+            
+            // 检查字段提取是否成功
+            if (extractedFields == null) {
+                log.warn("字段提取失败，使用空的字段对象");
+                extractedFields = new AiService.ExtractedFields();
+            }
+            
             log.info("提取的字段: destination={}, budget={}, groupSize={}, travelType={}", 
                 extractedFields.getDestination(), extractedFields.getBudget(), 
                 extractedFields.getGroupSize(), extractedFields.getTravelType());

@@ -1,0 +1,35 @@
+# Java 8 安全配置文件 - 解决SSL握手问题
+# 禁用证书验证和主机名验证（仅用于开发环境）
+
+# SSL/TLS 配置
+ssl.SocketFactory.provider=
+ssl.ServerSocketFactory.provider=
+
+# 禁用证书路径验证
+com.sun.net.ssl.checkRevocation=false
+trust_all_cert=true
+
+# 允许弱加密算法（仅开发环境）
+jdk.tls.disabledAlgorithms=
+jdk.certpath.disabledAlgorithms=
+
+# 允许所有TLS版本
+jdk.tls.client.protocols=TLSv1,TLSv1.1,TLSv1.2
+jdk.tls.server.protocols=TLSv1,TLSv1.1,TLSv1.2
+
+# 禁用SNI扩展检查
+jsse.enableSNIExtension=false
+
+# 允许自签名证书
+trust_all_cert=true
+com.sun.net.ssl.checkRevocation=false
+
+# 允许弱加密套件（仅开发环境）
+jdk.tls.legacyAlgorithms=
+
+# 禁用OCSP检查
+ocsp.enable=false
+
+# 允许所有密码套件
+jdk.tls.client.cipherSuites=
+jdk.tls.server.cipherSuites=

@@ -67,4 +67,8 @@ app:
     api-key: ${QWEN_API_KEY:your_qwen_api_key}
     base-url: https://dashscope.aliyuncs.com/api/v1
     model: qwen-turbo
+    
+  # AI服务配置
+  ai:
+    mock-mode: false  # 使用真实API调用
 

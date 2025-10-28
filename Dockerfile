@@ -1,6 +1,9 @@
 # 使用OpenJDK 17作为基础镜像
 FROM openjdk:17-jdk-slim
 
+# 安装curl用于健康检查
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # 设置工作目录
 WORKDIR /app
 
