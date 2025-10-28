@@ -1,12 +1,15 @@
-# 使用Eclipse Temurin 8 Alpine作为基础镜像
-FROM eclipse-temurin:8-jdk-alpine
+# 使用Eclipse Temurin 8 作为基础镜像（支持多平台）
+FROM eclipse-temurin:8-jdk
 
 # 设置工作目录
 WORKDIR /app
 
 # 安装必要的工具和SSL证书
-RUN apk add --no-cache curl ca-certificates && \
-    update-ca-certificates
+RUN apt-get update && \
+    apt-get install -y curl ca-certificates && \
+    update-ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # 创建应用目录（如需要持久化，可在 docker-compose 中挂载卷）
 RUN mkdir -p /app/data
